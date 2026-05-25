@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPM | Captura de Scrap / 스크랩 입력</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDMTedZv0hJlq93Ver5mAUNFVFxvnrEj48",
+    authDomain: "scrap-b1e4b.firebaseapp.com",
+    projectId: "scrap-b1e4b",
+    storageBucket: "scrap-b1e4b.firebasestorage.app",
+    messagingSenderId: "359052896230",
+    appId: "1:359052896230:web:f22de47846294c69055827"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.__db = db;
+  window.__collection = collection;
+  window.__addDoc = addDoc;
+  window.__serverTimestamp = serverTimestamp;
+  window.__firebaseReady = true;
+</script>
+
+<style>
+:root {
+  --black:#0a0a0a; --dark:#111418; --panel:#161b22; --border:#21262d;
+  --accent:#e8c93a; --accent2:#ff6b35; --text:#e6edf3; --muted:#7d8590;
+  --success:#3fb950; --error:#f85149; --input-bg:#0d1117;
+  --input-border:#30363d; --input-focus:#e8c93a; --blue:#58a6ff; --purple:#bc8cff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Barlow','Noto Sans KR',sans-serif;min-height:100vh;
+  background-image:radial-gradient(ellipse at 0% 0%,rgba(232,201,58,.06) 0%,transparent 60%),radial-gradient(ellipse at 100% 100%,rgba(255,107,53,.04) 0%,transparent 60%);}
+
+/* ── HEADER ── */
+.site-header{background:var(--panel);border-bottom:2px solid var(--accent);position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,.6);}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;max-width:1100px;margin:0 auto;}
+.logo-block{display:flex;align-items:center;gap:16px;}
+.logo-mark{width:44px;height:44px;background:var(--accent);color:var(--black);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;clip-path:polygon(10% 0%,90% 0%,100% 50%,90% 100%,10% 100%,0% 50%);}
+.logo-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:2px;color:var(--accent);line-height:1;}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.header-nav{display:flex;gap:8px;}
+.nav-btn{padding:8px 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;border:1.5px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s;text-decoration:none;}
+.nav-btn:hover,.nav-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(232,201,58,.08);}
+.nav-btn.admin-btn{border-color:var(--purple);color:var(--purple);}
+.nav-btn.admin-btn:hover{background:rgba(188,140,255,.1);}
+
+/* ── CONTAINER ── */
+.container{max-width:860px;margin:40px auto;padding:0 24px 80px;}
+.form-header{text-align:center;margin-bottom:36px;}
+.form-badge{display:inline-block;background:rgba(232,201,58,.15);border:1px solid rgba(232,201,58,.4);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:3px;padding:5px 14px;border-radius:20px;text-transform:uppercase;margin-bottom:14px;}
+.form-title{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;letter-spacing:2px;line-height:1.1;}
+.form-title span{display:block;font-size:20px;font-weight:400;letter-spacing:1px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;margin-top:4px;}
+
+/* ── CARD ── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+.card-header{padding:14px 24px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.card-dot.orange{background:var(--accent2);} .card-dot.green{background:var(--success);} .card-dot.red{background:var(--error);} .card-dot.purple{background:var(--purple);}
+.card-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.card-label-ko{font-family:'Noto Sans KR',sans-serif;font-size:11px;color:var(--muted);opacity:.7;margin-left:auto;}
+.card-body{padding:24px;}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;}
+.col-full{grid-column:1/-1;}
+
+/* ── FIELD ── */
+.field{display:flex;flex-direction:column;gap:6px;}
+.field-label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.field-label-ko{font-family:'Noto Sans KR',sans-serif;font-weight:400;font-size:11px;letter-spacing:0;text-transform:none;color:var(--muted);opacity:.6;}
+.req{color:var(--error);margin-left:2px;}
+input[type=text],input[type=number],select{background:var(--input-bg);border:1.5px solid var(--input-border);color:var(--text);padding:11px 14px;border-radius:8px;font-size:14px;font-family:'Barlow','Noto Sans KR',sans-serif;transition:border-color .2s,box-shadow .2s;width:100%;appearance:none;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237d8590' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer;}
+select option{background:var(--panel);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--input-focus);box-shadow:0 0 0 3px rgba(232,201,58,.12);}
+input.error,select.error{border-color:var(--error);box-shadow:0 0 0 3px rgba(248,81,73,.12);}
+input::placeholder{color:var(--muted);opacity:.5;}
+input[readonly]{background:rgba(63,185,80,.06);border-color:rgba(63,185,80,.3);color:var(--success);font-weight:600;cursor:default;}
+
+/* ── SHIFT / GROUP TOGGLE ── */
+.shift-toggle{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--input-border);}
+.shift-btn{flex:1;padding:11px 0;border:none;background:var(--input-bg);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.shift-btn small{font-size:10px;font-family:'Noto Sans KR',sans-serif;font-weight:400;letter-spacing:0;opacity:.7;}
+.shift-btn+.shift-btn{border-left:1px solid var(--input-border);}
+.shift-btn.active-day{background:rgba(232,201,58,.15);color:var(--accent);}
+.shift-btn.active-night{background:rgba(88,166,255,.15);color:var(--blue);}
+.group-toggle{display:flex;gap:8px;}
+.group-btn{flex:1;padding:11px 0;border:1.5px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;transition:all .2s;text-align:center;}
+.group-btn.active{background:rgba(255,107,53,.15);color:var(--accent2);border-color:var(--accent2);}
+
+/* ── DEFECTOS SECTION ── */
+.defectos-section{margin-top:0;}
+.defect-row{display:grid;grid-template-columns:1fr 80px 32px;gap:8px;align-items:center;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;transition:border-color .2s;}
+.defect-row:hover{border-color:var(--input-border);}
+.defect-row select{padding:8px 32px 8px 10px;font-size:13px;}
+.defect-row input[type=number]{padding:8px 10px;font-size:13px;text-align:center;}
+.defect-num{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;min-width:20px;}
+.btn-del-defect{width:32px;height:32px;border:none;background:rgba(248,81,73,.12);border-radius:6px;color:var(--error);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.btn-del-defect:hover{background:rgba(248,81,73,.25);}
+.btn-add-defect{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px;}
+.btn-add-defect:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,201,58,.05);}
+
+/* ── SCRAP COUNTER ── */
+.scrap-counter{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.2);border-radius:8px;margin-top:12px;}
+.scrap-counter.ok{background:rgba(63,185,80,.06);border-color:rgba(63,185,80,.2);}
+.scrap-counter.warn{background:rgba(232,201,58,.06);border-color:rgba(232,201,58,.2);}
+.counter-label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;flex:1;}
+.counter-vals{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--error);}
+.counter-vals.ok{color:var(--success);}
+.counter-vals.warn{color:var(--accent);}
+.counter-ko{font-family:'Noto Sans KR',sans-serif;font-size:10px;color:var(--muted);opacity:.6;}
+
+/* ── METRICS ── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;}
+.metric-box{background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.metric-value{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;line-height:1;color:var(--muted);transition:color .3s;}
+.metric-value.good{color:var(--success);} .metric-value.warn{color:var(--accent);} .metric-value.bad{color:var(--error);}
+.metric-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.metric-ko{font-family:'Noto Sans KR',sans-serif;font-size:9px;color:var(--muted);opacity:.5;margin-top:2px;}
+
+/* ── SAVE ── */
+.save-area{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.btn-save{width:100%;max-width:420px;padding:18px 0;background:var(--accent);color:var(--black);border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.btn-save small{font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:600;letter-spacing:0;}
+.btn-save:hover:not(:disabled){background:#f0d040;transform:translateY(-2px);box-shadow:0 8px 30px rgba(232,201,58,.4);}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── DATETIME ── */
+.datetime-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 24px;background:rgba(255,255,255,.02);border-top:1px solid var(--border);font-size:12px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:80px;right:24px;z-index:999;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;display:flex;align-items:flex-start;gap:10px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateX(120%);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);}
+.toast.show{transform:translateX(0);}
+.toast.success{background:rgba(63,185,80,.15);border:1.5px solid var(--success);color:var(--success);}
+.toast.error{background:rgba(248,81,73,.15);border:1.5px solid var(--error);color:var(--error);}
+.toast-content{flex:1;}
+.toast-title{font-weight:700;margin-bottom:2px;}
+.toast-ko{font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:400;opacity:.8;}
+
+/* ── MODAL (Admin / Productos) ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.overlay.open{display:flex;}
+.modal{background:#13181f;border:1px solid var(--border);border-radius:16px;padding:32px;width:90%;max-width:620px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.8);}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;letter-spacing:2px;color:var(--accent);margin-bottom:4px;}
+.modal-sub{font-family:'Noto Sans KR',sans-serif;font-size:12px;color:var(--muted);margin-bottom:20px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+.btn-modal{padding:9px 20px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1.5px solid;cursor:pointer;transition:all .2s;}
+.btn-modal.ghost{border-color:var(--border);color:var(--muted);background:transparent;}
+.btn-modal.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-modal.primary{border-color:var(--accent);color:var(--black);background:var(--accent);}
+.btn-modal.primary:hover{background:#f0d040;}
+.btn-modal.danger{border-color:var(--error);color:var(--error);background:transparent;}
+.btn-modal.danger:hover{background:rgba(248,81,73,.15);}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab{padding:8px 18px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;margin-bottom:-1px;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;} .tab-panel.active{display:block;}
+
+/* ── PRODUCT ADMIN ── */
+.prod-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.prod-item-info{flex:1;font-size:13px;}
+.prod-item-name{font-weight:600;color:var(--text);}
+.prod-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.prod-tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;background:rgba(232,201,58,.15);color:var(--accent);margin-right:4px;}
+.btn-remove-prod{width:28px;height:28px;border:none;background:rgba(248,81,73,.12);border-radius:6px;color:var(--error);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.btn-remove-prod:hover{background:rgba(248,81,73,.25);}
+
+.add-prod-form{background:rgba(232,201,58,.04);border:1px solid rgba(232,201,58,.15);border-radius:10px;padding:16px;margin-top:16px;}
+.add-prod-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
+.add-prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+
+/* ── DEFECTS ADMIN ── */
+.defect-admin-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.defect-admin-es{font-size:13px;font-weight:600;color:var(--text);flex:1;}
+.defect-admin-ko{font-family:'Noto Sans KR',sans-serif;font-size:12px;color:var(--muted);flex:1;}
+
+/* ── LOCK ICON ── */
+.lock-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--purple);background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.2);padding:3px 10px;border-radius:20px;margin-left:auto;}
+
+/* ── PASSWORD MODAL ── */
+.pwd-modal{background:#13181f;border:1px solid var(--purple);border-radius:12px;padding:28px;width:90%;max-width:380px;text-align:center;box-shadow:0 16px 60px rgba(0,0,0,.8);}
+.pwd-icon{font-size:40px;margin-bottom:12px;}
+.pwd-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:2px;color:var(--purple);margin-bottom:4px;}
+.pwd-ko{font-family:'Noto Sans KR',sans-serif;font-size:12px;color:var(--muted);margin-bottom:16px;}
+.pwd-input{width:100%;padding:12px;background:var(--input-bg);border:1.5px solid var(--purple);color:var(--text);border-radius:8px;font-size:16px;letter-spacing:4px;text-align:center;margin-bottom:14px;font-family:'Barlow Condensed',sans-serif;}
+.pwd-input:focus{outline:none;box-shadow:0 0 0 3px rgba(188,140,255,.2);}
+.pwd-error{color:var(--error);font-size:12px;margin-top:-8px;margin-bottom:10px;display:none;}
+
+/* ── DOWNTIME ROWS ── */
+.dt-row{display:grid;grid-template-columns:140px 80px 1fr 32px;gap:8px;align-items:center;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;transition:border-color .2s;}
+.dt-row:hover{border-color:var(--input-border);}
+.dt-row select,.dt-row input[type=number]{padding:8px 10px;font-size:13px;}
+.dt-row select{padding-right:28px;}
+.dt-row input[type=text]{padding:8px 12px;font-size:13px;}
+.dt-total-bar{display:flex;align-items:center;gap:12px;padding:11px 16px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.2);border-radius:8px;margin-top:12px;}
+.dt-total-bar.warn{background:rgba(248,81,73,.06);border-color:rgba(248,81,73,.2);}
+.dt-total-label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;flex:1;}
+.dt-total-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--blue);}
+.dt-total-val.warn{color:var(--error);}
+.btn-add-dt{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px;}
+.btn-add-dt:hover{border-color:var(--blue);color:var(--blue);background:rgba(88,166,255,.05);}
+
+@media(max-width:640px){
+  .dt-row{grid-template-columns:1fr 70px 32px;}
+  .dt-row .dt-tipo{grid-column:1/-1;}
+  .dt-row .dt-motivo{grid-column:1/-1;}
+}
+  .g2,.g3,.g4{grid-template-columns:1fr 1fr;}
+  .metrics-row{grid-template-columns:1fr 1fr;}
+  .header-inner{padding:12px 16px;}
+  .container{padding:0 16px 80px;}
+  .form-title{font-size:28px;}
+  .defect-row{grid-template-columns:1fr 70px 32px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo-block">
+      <div class="logo-mark">H</div>
+      <div>
+        <div class="logo-title">HPM PROCESS OEE</div>
+        <div class="logo-sub">Process Quality System / 공정 품질 시스템</div>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active">📋 Formulario</button>
+      <button class="nav-btn" onclick="window.open('dashboard.html','_blank')">📊 Dashboard</button>
+      <button class="nav-btn admin-btn" onclick="solicitarAdmin()">⚙️ Admin</button>
+    </nav>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="container">
+  <div class="form-header">
+    <h1 class="form-title">REGISTRO DE PRODUCCIÓN<span>생산 기록 입력 양식</span></h1>
+  </div>
+
+  <!-- ── CARD 1: Operador ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot"></div>
+      <span class="card-label">Información del Operador</span>
+      <span class="card-label-ko">작업자 정보</span>
+    </div>
+    <div class="card-body">
+      <div class="g2">
+        <div class="field">
+          <label class="field-label">N° Empleado <span class="req">*</span><span class="field-label-ko">사번</span></label>
+          <input type="text" id="numEmpleado" placeholder="Ej: 10234" maxlength="10">
+        </div>
+        <div class="field">
+          <label class="field-label">Turno <span class="req">*</span><span class="field-label-ko">교대</span></label>
+          <div class="shift-toggle">
+            <button class="shift-btn" data-val="DIA" onclick="selectShift(this)">☀️ DÍA<small>주간</small></button>
+            <button class="shift-btn" data-val="NOCHE" onclick="selectShift(this)">🌙 NOCHE<small>야간</small></button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Grupo <span class="req">*</span><span class="field-label-ko">그룹</span></label>
+          <div class="group-toggle">
+            <button class="group-btn" data-val="A" onclick="selectGroup(this)">A</button>
+            <button class="group-btn" data-val="B" onclick="selectGroup(this)">B</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Máquina <span class="req">*</span><span class="field-label-ko">기계번호</span></label>
+          <input type="text" id="maquina" placeholder="Ej: INY-01">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CARD 2: Producto ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot orange"></div>
+      <span class="card-label">Información de Producto</span>
+      <span class="card-label-ko">제품 정보</span>
+    </div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field">
+          <label class="field-label">Cliente <span class="req">*</span><span class="field-label-ko">고객사</span></label>
+          <select id="cliente" onchange="filterModelos()"><option value="">-- Seleccionar --</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Modelo <span class="req">*</span><span class="field-label-ko">모델</span></label>
+          <select id="modelo" onchange="filterPiezas()"><option value="">-- Seleccionar --</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Nombre de Pieza <span class="req">*</span><span class="field-label-ko">부품명</span></label>
+          <select id="pieza" onchange="autoFillNumeroParte()"><option value="">-- Seleccionar --</option></select>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="field">
+          <label class="field-label">Número de Parte (Auto)<span class="field-label-ko">부품번호 (자동입력)</span></label>
+          <input type="text" id="numeroParte" readonly placeholder="Se autocompletará al seleccionar la pieza">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CARD 3: Producción ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot green"></div>
+      <span class="card-label">Datos de Producción</span>
+      <span class="card-label-ko">생산 데이터</span>
+    </div>
+    <div class="card-body">
+      <div class="g4">
+        <div class="field">
+          <label class="field-label">Plan Producción <span class="req">*</span><span class="field-label-ko">생산계획</span></label>
+          <input type="number" id="planProd" min="0" placeholder="0" oninput="calcMetrics()">
+        </div>
+        <div class="field">
+          <label class="field-label">Pzas Producidas <span class="req">*</span><span class="field-label-ko">생산수량</span></label>
+          <input type="number" id="pzasProducidas" min="0" placeholder="0" oninput="calcMetrics()">
+        </div>
+        <div class="field">
+          <label class="field-label">Pzas Scrap <span class="req">*</span><span class="field-label-ko">스크랩</span></label>
+          <input type="number" id="pzasScrap" min="0" placeholder="0" oninput="calcMetrics();validateScrapMatch()">
+        </div>
+        <div class="field">
+          <label class="field-label">T. Muerto (min) <span class="req">*</span><span class="field-label-ko">다운타임</span></label>
+          <input type="number" id="tiempoMuerto" min="0" max="720" placeholder="0" oninput="calcMetrics();validateDTMatch()">
+        </div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric-box"><div class="metric-value" id="metricProductividad">—</div><div class="metric-label">Productividad</div><div class="metric-ko">생산성</div></div>
+        <div class="metric-box"><div class="metric-value" id="metricFTQ">—</div><div class="metric-label">FTQ / 품질율</div><div class="metric-ko">불량률</div></div>
+        <div class="metric-box"><div class="metric-value" id="metricDisp">—</div><div class="metric-label">Disponibilidad</div><div class="metric-ko">가동률</div></div>
+        <div class="metric-box"><div class="metric-value" id="metricOEE">—</div><div class="metric-label">OEE Est.</div><div class="metric-ko">종합효율</div></div>
+      </div>
+    </div>
+    <div class="datetime-bar">
+      <span id="fechaHora">⏱ —</span>
+      <span id="fechaHoraKo" style="font-family:'Noto Sans KR';font-size:11px;letter-spacing:0;">—</span>
+    </div>
+  </div>
+
+  <!-- ── CARD 4: TIEMPO MUERTO ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--blue)"></div>
+      <span class="card-label">Registro de Tiempo Muerto</span>
+      <span class="card-label-ko">비가동 시간 기록</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+        Registra cada paro de Máquina o Molde con su duración y motivo. La suma debe coincidir con el Tiempo Muerto capturado.<br>
+        <span style="font-family:'Noto Sans KR';font-size:11px;">기계 또는 금형의 각 비가동을 기간 및 원인과 함께 기록하세요.</span>
+      </p>
+
+      <!-- Headers -->
+      <div style="display:grid;grid-template-columns:140px 80px 1fr 32px;gap:8px;padding:0 14px 6px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Tipo / 유형</span>
+        <span style="text-align:center;">Min.</span>
+        <span>Motivo / 원인</span>
+        <span></span>
+      </div>
+
+      <div id="dtRows"></div>
+      <button class="btn-add-dt" onclick="agregarDT()">+ Agregar Paro &nbsp;·&nbsp; 비가동 추가</button>
+
+      <!-- TOTAL COUNTER -->
+      <div class="dt-total-bar" id="dtTotalBar">
+        <div>
+          <div class="dt-total-label">Total registrado vs T. Muerto capturado · 비가동 합계 vs 다운타임</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Noto Sans KR'">값이 일치해야 합니다 · Los valores deben coincidir</div>
+        </div>
+        <div class="dt-total-val" id="dtTotalVal">0 / 0 min</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CARD 5: DEFECTOS ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot red"></div>
+      <span class="card-label">Registro de Defectos / Scrap</span>
+      <span class="card-label-ko">불량 유형 기록</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <p style="font-size:12px;color:var(--muted);">Detalla cada tipo de defecto y su cantidad. La suma debe coincidir con las Piezas Scrap.<br><span style="font-family:'Noto Sans KR';font-size:11px;">각 불량 유형과 수량을 입력하세요. 합계는 스크랩 수량과 일치해야 합니다.</span></p>
+      </div>
+
+      <!-- Headers -->
+      <div style="display:grid;grid-template-columns:1fr 80px 32px;gap:8px;padding:0 14px 6px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Defecto / 불량 유형</span>
+        <span style="text-align:center;">Cant. / 수량</span>
+        <span></span>
+      </div>
+
+      <!-- Defect rows container -->
+      <div id="defectRows"></div>
+
+      <!-- Add button -->
+      <button class="btn-add-defect" onclick="agregarDefecto()">+ Agregar Defecto &nbsp;·&nbsp; 불량 추가</button>
+
+      <!-- MATCH COUNTER -->
+      <div class="scrap-counter" id="scrapCounter">
+        <div>
+          <div class="counter-label">Defectos registrados vs Scrap capturado · 등록 불량 합계 vs 스크랩</div>
+          <div class="counter-ko">Los valores deben coincidir · 값이 일치해야 합니다</div>
+        </div>
+        <div class="counter-vals" id="counterVals">0 / 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE -->
+  <div class="save-area">
+    <button class="btn-save" id="btnSave" onclick="guardarRegistro()">
+      💾 GUARDAR REGISTRO
+      <small>기록 저장</small>
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-content">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-ko" id="toastKo"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PASSWORD OVERLAY
+══════════════════════════════════════════════════════════════ -->
+<div class="overlay" id="pwdOverlay">
+  <div class="pwd-modal">
+    <div class="pwd-icon">🔐</div>
+    <div class="pwd-title">ACCESO ADMIN</div>
+    <div class="pwd-ko">관리자 접근 · Ingresa la contraseña</div>
+    <input type="password" class="pwd-input" id="pwdInput" placeholder="••••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkPwd()">
+    <div class="pwd-error" id="pwdError">❌ Contraseña incorrecta · 비밀번호 오류</div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-modal ghost" style="flex:1" onclick="cerrarPwd()">Cancelar</button>
+      <button class="btn-modal primary" style="flex:1" onclick="checkPwd()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ADMIN MODAL
+══════════════════════════════════════════════════════════════ -->
+<div class="overlay" id="adminOverlay" onclick="cerrarAdmin(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">⚙️ ADMINISTRACIÓN</div>
+    <div class="modal-sub">관리자 패널 · Gestión de Productos y Defectos</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('tabProd',this)">📦 Productos<br><small style="font-family:'Noto Sans KR';font-size:9px;letter-spacing:0">제품 관리</small></button>
+      <button class="tab" onclick="switchTab('tabDefects',this)">🔴 Defectos<br><small style="font-family:'Noto Sans KR';font-size:9px;letter-spacing:0">불량 유형 관리</small></button>
+    </div>
+
+    <!-- TAB: PRODUCTOS -->
+    <div id="tabProd" class="tab-panel active">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Productos personalizados guardados · 저장된 사용자 정의 제품</div>
+      <div id="customProdList"></div>
+
+      <div class="add-prod-form">
+        <div class="add-prod-title">+ Agregar Nuevo Producto · 새 제품 추가</div>
+        <div class="add-prod-grid">
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">Nombre de Pieza <span class="req">*</span></label>
+            <input type="text" id="newNombre" placeholder="Nombre del producto">
+          </div>
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">Número de Parte <span class="req">*</span></label>
+            <input type="text" id="newNumero" placeholder="Ej: XX000A0001">
+          </div>
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">Cliente <span class="req">*</span></label>
+            <input type="text" id="newCliente" placeholder="Ej: MCM">
+          </div>
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">Modelo <span class="req">*</span></label>
+            <input type="text" id="newModelo" placeholder="Ej: BDM">
+          </div>
+        </div>
+        <button class="btn-modal primary" onclick="agregarProducto()">💾 Guardar Producto · 제품 저장</button>
+      </div>
+    </div>
+
+    <!-- TAB: DEFECTOS -->
+    <div id="tabDefects" class="tab-panel">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Lista de defectos disponibles en el formulario · 양식의 불량 유형 목록</div>
+      <div id="defectAdminList"></div>
+
+      <div class="add-prod-form" style="margin-top:16px;">
+        <div class="add-prod-title">+ Agregar Defecto · 불량 유형 추가</div>
+        <div class="add-prod-grid">
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">Español <span class="req">*</span></label>
+            <input type="text" id="newDefectEs" placeholder="Nombre del defecto">
+          </div>
+          <div class="field">
+            <label class="field-label" style="font-size:11px;">한국어 (Coreano)</label>
+            <input type="text" id="newDefectKo" placeholder="결함 이름 (opcional)">
+          </div>
+        </div>
+        <button class="btn-modal primary" onclick="agregarDefectoAdmin()">💾 Guardar Defecto · 불량 저장</button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal ghost" onclick="cerrarAdmin()">✕ Cerrar · 닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════════ -->
+<script>
+const ADMIN_PWD = 'OEE3508';
+const LS_CUSTOM_PROD = 'hpm_custom_productos';
+const LS_CUSTOM_DEF  = 'hpm_custom_defectos';
+const LS_DATA        = 'hpm_scrap';
+
+// ─────────────────────────────────────────────
+// BOM BASE (196 piezas del Excel HPM)
+// ─────────────────────────────────────────────
+const BOM_BASE = [{"nombre":"MODEL3 DUST SEAL ASSY FRT","numero":"SH380A2701","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"BDM DUST SEAL ASSY FRT","numero":"SK380A0101","cliente":"MCM","modelo":"BDM"},{"nombre":"SC DUST SEAL ASSY FRT","numero":"SK280A1701","cliente":"MCM","modelo":"SC/HC"},{"nombre":"CANOO DUST SEAL ASSY RR","numero":"SH380A2501","cliente":"MCM","modelo":"CANOO LV1"},{"nombre":"MODEL3 DUST SEAL ASSY RR","numero":"SH380A2201","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"BDM DUST SEAL ASSY RR","numero":"SH280A1601","cliente":"MCM","modelo":"BDM"},{"nombre":"GSB DUST SEAL ASSY RR","numero":"SH380A1501","cliente":"MCM","modelo":"GSB"},{"nombre":"SC DUST SEAL ASSY RR","numero":"SH280A1401","cliente":"MCM","modelo":"SC/HC"},{"nombre":"S650 CAP FRT","numero":"SK485A9501","cliente":"MCM","modelo":"S650"},{"nombre":"BDM CAP RR PEQUEÑO","numero":"SH285A1201","cliente":"MCM","modelo":"BDM/CN7A"},{"nombre":"SC CAP RR PEQUEÑO","numero":"SH285A1401","cliente":"MCM","modelo":"SC/HC"},{"nombre":"BL7M CAP RR PEQUEÑO","numero":"SH285A1601","cliente":"MCM","modelo":"BL7M"},{"nombre":"D2UC CAP RR PEQUEÑO","numero":"SU385A1101","cliente":"MCM","modelo":"D2UC"},{"nombre":"S650 BEAUTY CAP PEQUEÑO","numero":"SZ434B6501","cliente":"MCM","modelo":"S650"},{"nombre":"NX4A CAP FRT","numero":"SK485A2201","cliente":"MCM","modelo":"NX4A"},{"nombre":"SC CAP FRT","numero":"SK283A2701","cliente":"MCM","modelo":"SC"},{"nombre":"BL7M CAP FRT","numero":"SK285A1601","cliente":"MCM","modelo":"BL7M"},{"nombre":"BDM CAP FRT","numero":"SK383A0101","cliente":"MCM","modelo":"BDM"},{"nombre":"CN7A CAP FRT","numero":"SK383A8701","cliente":"MCM","modelo":"CN7A"},{"nombre":"MQ4A CAP RR","numero":"SH385A0701","cliente":"MCM","modelo":"MQ4A"},{"nombre":"NV35 GT35C CAP FRT","numero":"SH385D3701","cliente":"MCM","modelo":"NV35"},{"nombre":"NV35 GT30C CAP RR","numero":"SH385D3801","cliente":"MCM","modelo":"NV35"},{"nombre":"NX4A CAP RR","numero":"SH385A3801","cliente":"MCM","modelo":"NX4A"},{"nombre":"CANOO INSULATOR CAP RR","numero":"SZ434A3501","cliente":"MCM","modelo":"CANOO LV1"},{"nombre":"SC INSULATOR CAP RR","numero":"SZ434C1201","cliente":"MCM","modelo":"SC/HC/BR2/GSB"},{"nombre":"BDM INSULATOR CAP ASSY RR","numero":"SZ434C1601","cliente":"MCM","modelo":"BDM/CN7A"},{"nombre":"MODEL3 TOP MOUNT SUB ASSY FRT","numero":"SZ437A2001","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"MODEL Y TOP MOUNT SUB ASSY FRT","numero":"SZ437A2002Z1","cliente":"MCM","modelo":"MODEL Y"},{"nombre":"TESLA AUSTIN TOP MOUNT SUB ASSY FRT","numero":"SZ437A2004","cliente":"MCM","modelo":"TESLA AUSTIN"},{"nombre":"MODEL Y TOP MOUNT SUB ASSY FRT","numero":"SZ437A2005","cliente":"MCM","modelo":"MODEL Y"},{"nombre":"Y LEGACY TOP MOUNT SUB ASSY FRT","numero":"SZ437B7901","cliente":"MCM","modelo":"TESLA"},{"nombre":"3 TOP MOUNT ASSY RR","numero":"SZ437A2101","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"3 TOP MOUNT ASSY FRT","numero":"SZ437A2102","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"Y TOP MOUNT ASSY RR","numero":"SZ437A2104","cliente":"MCM","modelo":"Model_Y"},{"nombre":"BERLIN TOP MOUNT ASSY RR","numero":"SZ437A2105","cliente":"MCM","modelo":"BERLIN"},{"nombre":"AUSTIN TOP MOUNT ASSY RR","numero":"SZ437A2106","cliente":"MCM","modelo":"TESLA AUSTIN"},{"nombre":"Y AWD TOP MOUNT ASSY RR","numero":"SZ437A2103","cliente":"MCM","modelo":"TESLA AWD"},{"nombre":"Y BERLIN TOP MOUNT ASSY RR","numero":"SZ437A2107","cliente":"MCM","modelo":"TESLA AWD"},{"nombre":"D2UC TOP MOUNT DUST COVER ASSY RR","numero":"SZ437A2201","cliente":"MCM","modelo":"D2UC"},{"nombre":"BL7M B/RUBBER ASSY FRT","numero":"SZ442A9602","cliente":"MCM","modelo":"BL7M"},{"nombre":"S650 BUMPER RUBBER ASSY FRT","numero":"SZ442B9501","cliente":"MCM","modelo":"S650"},{"nombre":"HB BUMPER RUBBER ASSY FRT","numero":"SZ442C2801","cliente":"MCM","modelo":"HB"},{"nombre":"CANOO BUMPER RUBBER ASSY FRT","numero":"SZ442C6701","cliente":"MCM","modelo":"CANOO LV1"},{"nombre":"SU2B B/RUBBER ASSY FRT","numero":"SZ442C4803","cliente":"MCM","modelo":"SU2B"},{"nombre":"SC BUMPER RUBBER ASSY FRT","numero":"SZ442C4801","cliente":"MMX","modelo":"SC/HC"},{"nombre":"BR2 BUMPER RUBBER SUB ASSY FRT","numero":"SZ442C8701","cliente":"MCM","modelo":"BR2"},{"nombre":"BL7M B/RUBBER ASSY RR","numero":"SZ442A9801","cliente":"MCM","modelo":"BL7M"},{"nombre":"SU2B B/RUBBER ASSY RR","numero":"SZ442A6101","cliente":"MCM","modelo":"SU2B"},{"nombre":"HC BUMPER RUBBER ASSY RR","numero":"SZ442A0801","cliente":"MCM","modelo":"HC"},{"nombre":"S650 BUMPER RUBBER RR","numero":"SZ442B6501","cliente":"MCM","modelo":"S650"},{"nombre":"CANOO BUMPER RUBBER RR","numero":"SZ442C6702","cliente":"MCM","modelo":"CANOO LV1"},{"nombre":"BDM BUMPER RUBBER ASSY FRT","numero":"SZ440C5702","cliente":"MMX","modelo":"BDM"},{"nombre":"BDM GT BUMPER RUBBER ASSY FRT","numero":"SZ440C7102","cliente":"MMX","modelo":"BDM_GT"},{"nombre":"S650 BUMPER RUBBER SUB ASSY FRT","numero":"SZ440B9502","cliente":"MCM","modelo":"S650"},{"nombre":"BUMPER RUBBER ASSY LOWER","numero":"SZ442C8801","cliente":"MCM","modelo":"BR2"},{"nombre":"GSB BUMPER RUBBER ASSY RR","numero":"SZ442C4303","cliente":"MCM","modelo":"GSB"},{"nombre":"BDM DUST COVER FRT","numero":"SZ441C6201","cliente":"MMX","modelo":"BDM"},{"nombre":"SC DUST COVER RR","numero":"SZ441A0801","cliente":"MCM","modelo":"HC"},{"nombre":"BDM LA INSULATOR B/RUBBER ASSY LOWER","numero":"SZ444C3001","cliente":"MCM","modelo":"BDM_LA"},{"nombre":"BDM INSULATOR B/RUBBER ASSY LOWER","numero":"SZ444C2901","cliente":"MCM","modelo":"BDM_NA"},{"nombre":"BDM GT INSULATOR B/RUBBER ASSY LOWER","numero":"SZ444C3301","cliente":"MCM","modelo":"BDM_GT"},{"nombre":"INSULATOR B/RUBBER ASSY LOWER","numero":"SZ444C3501","cliente":"MCM","modelo":"CN7A"},{"nombre":"CL4M INSULATOR B/RUBBER ASSY LOWER","numero":"SZ444B4601","cliente":"MCM","modelo":"CL4M"},{"nombre":"S650 DUST COVER FRT","numero":"SZ441B9501","cliente":"MCM","modelo":"S650"},{"nombre":"ELCV DUST COVER RR","numero":"SZ441A0301","cliente":"MCM","modelo":"BV1Hx(eLCV)"},{"nombre":"P708 DUST COVER","numero":"GP27865U00","cliente":"MCM","modelo":"P708"},{"nombre":"BEV3 1 REBOUND SPRING ASSY","numero":"SZ342A0101","cliente":"MCM","modelo":"BEV3"},{"nombre":"BEV3 2 REBOUND SPRING ASSY","numero":"SZ342A2001","cliente":"MCM","modelo":"BEV3"},{"nombre":"BEV3 3 REBOUND SPRING ASSY","numero":"SZ342A1801","cliente":"MCM","modelo":"BEV3"},{"nombre":"S650 1 REBOUND SPRING ASSY","numero":"SZ342A6501","cliente":"MCM","modelo":"S650"},{"nombre":"S650 2 REBOUND SPRING ASSY","numero":"SZ342A6502","cliente":"MCM","modelo":"S650"},{"nombre":"S650 3 REBOUND SPRING ASSY","numero":"SZ342A6503","cliente":"MCM","modelo":"S650"},{"nombre":"S650 4 REBOUND SPRING ASSY","numero":"SZ342A6504","cliente":"MCM","modelo":"S650"},{"nombre":"DN8A SPRING PAD LOWER","numero":"SZ460A0501","cliente":"MCM","modelo":"DN8a"},{"nombre":"ON SPRING PAD LOWER","numero":"SZ460A0401","cliente":"MCM","modelo":"ON"},{"nombre":"XMA SPRING PAD LOWER","numero":"SZ46005201","cliente":"MCM","modelo":"XMA"},{"nombre":"JK1A SPRING PAD LOWER","numero":"SZ460A7101","cliente":"MCM","modelo":"JK1A"},{"nombre":"TESLA SPRING PAD LOWER","numero":"SZ460C3401","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"CN7A SPRING PAD LOWER","numero":"SZ460C8801","cliente":"MCM","modelo":"CN7A"},{"nombre":"MQ4A SPRING PAD LOWER","numero":"SZ460A0701","cliente":"MCM","modelo":"MQ4A"},{"nombre":"NX4A SPRING PAD LOWER","numero":"SZ460A0801","cliente":"MCM","modelo":"NX4A"},{"nombre":"NX4 OB STOP RUBBER FRT","numero":"SK42500101","cliente":"MCM","modelo":"NX4 OB"},{"nombre":"SC STOP RUBBER FRT","numero":"SK22500101","cliente":"MCM","modelo":"SC/HC"},{"nombre":"D2UC STOP RUBBER FRT","numero":"SK325A1201","cliente":"MCM","modelo":"D2UC"},{"nombre":"D2UC DENALI STOP RUBBER","numero":"SH325A0101","cliente":"MCM","modelo":"D2UC"},{"nombre":"D2UC STOP RUBBER RR","numero":"SH325A1101","cliente":"MCM","modelo":"D2UC"},{"nombre":"BEV3 STOP RUBBER","numero":"SH425A0101","cliente":"MCM","modelo":"BEV3"},{"nombre":"ELCV STOP RUBBER FRT","numero":"SS425A0101","cliente":"MCM","modelo":"BV1Hx(eLCV)"},{"nombre":"ELCV STOP RUBBER RR","numero":"SS425A0201","cliente":"MCM","modelo":"BV1Hx(eLCV)"},{"nombre":"CANOO LV1 STOP RUBBER FRT","numero":"SV32500101","cliente":"MCM","modelo":"CANOO LV1"},{"nombre":"MODEL3 STOP RUBBER FRT","numero":"SV32500102","cliente":"MCM","modelo":"MODEL 3"},{"nombre":"Cushion-B FRT","numero":"8A1224","cliente":"MCM","modelo":"BDM"},{"nombre":"SU2B INSULATOR ASSY","numero":"SZ433A7801","cliente":"MCM","modelo":"SU2B"},{"nombre":"S650 INSULATOR ASSY","numero":"SZ433B6501","cliente":"MCM","modelo":"S650"},{"nombre":"CN7A INSULATOR ASSY","numero":"SZ433C5501","cliente":"MCM","modelo":"CN7A"},{"nombre":"NX4A INSULATOR ASSY","numero":"SZ433C2801","cliente":"MCM","modelo":"NX4A/NX4 OB"},{"nombre":"BR2 MOUNTING RUBBER","numero":"GR28712200","cliente":"MCM","modelo":"BR2"},{"nombre":"TESLA SPACER","numero":"SZ929A1101","cliente":"MCM","modelo":"TESLA"},{"nombre":"B1TCC OUTER RING","numero":"18608203","cliente":"DN-AUTOMOTIVE","modelo":"B1TCC"},{"nombre":"B1TCC OUTER SHELL","numero":"15418804","cliente":"DN-AUTOMOTIVE","modelo":"B1TCC"},{"nombre":"B1TCC CHAMFER RING","numero":"17870901","cliente":"DN-AUTOMOTIVE","modelo":"B1TCC"},{"nombre":"BEV2 PLASTIC INSERT","numero":"15294401","cliente":"DN-AUTOMOTIVE","modelo":"BEV2"},{"nombre":"BEV2 OUTER SLEEVE","numero":"14913601","cliente":"DN-AUTOMOTIVE","modelo":"BEV2"},{"nombre":"HOUSING (LH) FRT","numero":"15378401","cliente":"DN-AUTOMOTIVE","modelo":"BEV2"},{"nombre":"HOUSING (RH) FRT","numero":"10787001","cliente":"DN-AUTOMOTIVE","modelo":"BEV2"},{"nombre":"EVEREST WORM SHAFT ASSY","numero":"BC751A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"MQ4A WORM SHAFT ASSY","numero":"BC750A1100","cliente":"HPA","modelo":"MQ4A"},{"nombre":"MQ4A CARRIER MOLD ASSY","numero":"BC771A1100","cliente":"HPA","modelo":"MQ4A"},{"nombre":"SPA2 CARRIER MOLD ASSY","numero":"BC771A2600","cliente":"HPA","modelo":"SPA2"},{"nombre":"TESLA CARRIER MOLD ASSY","numero":"BC771A2400","cliente":"HPA","modelo":"TESLA"},{"nombre":"MQ4A WORM WHEEL ASSY","numero":"BC757A1700","cliente":"HPA","modelo":"MQ4A"},{"nombre":"EVEREST WORM WHEEL ASSY","numero":"BC755A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"EVEREST A/HOUSING ASSY LH","numero":"BC710A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"EVEREST A/HOUSING ASSY RH","numero":"BC711A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"TESLA A/HOUSING ASSY LH","numero":"BC710A2300","cliente":"HPA","modelo":"TESLA"},{"nombre":"TESLA A/HOUSING ASSY RH","numero":"BC711A2300","cliente":"HPA","modelo":"TESLA"},{"nombre":"MQ4A A/HOUSING ASSY LH","numero":"BC710A1100","cliente":"HPA","modelo":"MQ4a"},{"nombre":"MQ4A A/HOUSING ASSY RH","numero":"BC711A1100","cliente":"HPA","modelo":"MQ4a"},{"nombre":"SPA2 A/HOUSING ASSY LH","numero":"BC710A2100","cliente":"HPA","modelo":"SPA2"},{"nombre":"SPA2 A/HOUSING ASSY RH","numero":"BC711A2100","cliente":"HPA","modelo":"SPA2"},{"nombre":"C1XX A/HOUSING ASSY LH","numero":"BC710A2600","cliente":"HPA","modelo":"C1XX"},{"nombre":"C1XX A/HOUSING ASSY RH","numero":"BC711A2600","cliente":"HPA","modelo":"C1XX"},{"nombre":"TESLA A/HOUSING COVER LH","numero":"BC718A1101","cliente":"HPA","modelo":"TESLA"},{"nombre":"TESLA A/HOUSING COVER RH","numero":"BC719A1101","cliente":"HPA","modelo":"TESLA"},{"nombre":"EVEREST A/HOUSING COVER ASSY LH","numero":"BC718A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"EVEREST A/HOUSING COVER ASSY RH","numero":"BC719A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"EVEREST GEAR BOX LH","numero":"BC742A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"EVEREST GEAR BOX RH","numero":"BC743A2500","cliente":"HPA","modelo":"EVEREST"},{"nombre":"GAMMA RSVR SWITCH ASSY","numero":"BM33107900","cliente":"MCM","modelo":"GAMMA"},{"nombre":"BR2 RSVR SWITCH ASSY","numero":"BM33108200","cliente":"MCM","modelo":"BR2"},{"nombre":"SC RSVR SWITCH ASSY","numero":"BM33105900","cliente":"MCM","modelo":"SC"},{"nombre":"SU2B RSVR SWITCH ASSY","numero":"BM331A3500","cliente":"MCM","modelo":"SU2B"},{"nombre":"BL7M RSVR SWITCH ASSY","numero":"BM341A7900","cliente":"MCM","modelo":"BL7M"},{"nombre":"BDM RSVR SENSOR ASSY","numero":"M658563000","cliente":"MMX","modelo":"BDM"},{"nombre":"DN8A RSVR SENSOR ASSY","numero":"L158563000","cliente":"MMX","modelo":"DN8A"},{"nombre":"CN7A RSVR SENSOR ASSY","numero":"AB58563300","cliente":"MMX","modelo":"CN7A"},{"nombre":"NX4A RSVR SENSOR ASSY","numero":"N958563000","cliente":"MMX","modelo":"NX4A"},{"nombre":"SC RSVR CAP ASSY","numero":"BM34605400","cliente":"MCM","modelo":"SC/HC"},{"nombre":"SC RSVR CAP ASSY PINTURA","numero":"BM34605700","cliente":"MCM","modelo":"SC/HC"},{"nombre":"BL7M RSVR CAP ASSY PINTURA","numero":"BM346A1500","cliente":"MCM","modelo":"BL7M"},{"nombre":"BDM RSVR CAP ASSY","numero":"4H58570120","cliente":"MMX","modelo":"BDM"},{"nombre":"DN8A RSVR CAP ASSY","numero":"Q558570220","cliente":"MMX","modelo":"DN8A"},{"nombre":"CN7A RSVR CAP ASSY PINTURA","numero":"Q558570100","cliente":"MMX","modelo":"CN7A"},{"nombre":"BR2 VALVE BODY","numero":"BB46202503","cliente":"MCM","modelo":"BR2"},{"nombre":"SC VALVE BODY","numero":"BB46202504","cliente":"MCM","modelo":"SC/HC"},{"nombre":"BR2 VALVE BODY 7.5","numero":"BB46202502","cliente":"MCM","modelo":"BR2"},{"nombre":"CN7A VALVE BODY","numero":"AA59135300","cliente":"MMX","modelo":"CN7A"},{"nombre":"NX4A VALVE BODY","numero":"C559135250","cliente":"MMX","modelo":"NX4A"},{"nombre":"SU2B VALVE BODY","numero":"BB46202505","cliente":"MCM","modelo":"SU2B"},{"nombre":"BL7M BOOT","numero":"BB61502000","cliente":"MCM","modelo":"BL7M"},{"nombre":"SC BOOT","numero":"BB61502800","cliente":"MCM","modelo":"SC/HC/BR2"},{"nombre":"SC INSULATOR ASSY RR","numero":"SZ433C3401","cliente":"MCM","modelo":"SC/HC/BR2"},{"nombre":"REAR WIPER BRACKET","numero":"201014001","cliente":"MCM","modelo":"C223"},{"nombre":"BL7M HEAD LAMP STRIP ASSY LH","numero":"BC92114010","cliente":"MMX","modelo":"BL7M"},{"nombre":"BL7M HEAD LAMP STRIP ASSY RH","numero":"BC92114020","cliente":"MMX","modelo":"BL7M"},{"nombre":"GEM BRACKET ASSY","numero":"BH9003Z100","cliente":"MCM","modelo":"GEM"},{"nombre":"NX4A ECU COVER","numero":"GE52100L00","cliente":"MCM","modelo":"NX4A"},{"nombre":"NX4A BRACKET ASSY HECU","numero":"BH9003BC00","cliente":"MCM","modelo":"NX4A"},{"nombre":"SU2B WORM WHEEL","numero":"GM441B2102","cliente":"MCM","modelo":"SU2B"},{"nombre":"NX4A WORM WHEEL","numero":"GM441N5000","cliente":"MCM","modelo":"NX4A"},{"nombre":"CL4M DUST CAP ASSY RHD","numero":"AT56555090","cliente":"MMX","modelo":"CL4M_RHD"},{"nombre":"CL4M DUST CAP ASSY LHD","numero":"AT56555000","cliente":"MMX","modelo":"CL4M_LHD"},{"nombre":"MQ4A PE DUST CAP ASSY","numero":"P256555500","cliente":"MMX","modelo":"MQ4A PE"},{"nombre":"BR2 DUST CAP ASSY","numero":"GP371A2200","cliente":"MCM","modelo":"BR2"},{"nombre":"BL7M DUST CAP ASSY","numero":"GP371A7450","cliente":"MCM","modelo":"BL7M"},{"nombre":"SU2B DUST CAP ASSY","numero":"GP371D5000","cliente":"MCM","modelo":"SU2B"},{"nombre":"CL4M BELLOWS ASSY","numero":"P256565000","cliente":"MMX","modelo":"CL4M"},{"nombre":"MQ4A PE BELLOWS ASSY","numero":"S156565000","cliente":"MMX","modelo":"MQ4A PE"},{"nombre":"NX4A BELLOWS ASSY","numero":"GP274A5300","cliente":"PRIMAX","modelo":"NX4A"},{"nombre":"BR2 BELLOWS ASSY","numero":"GP274A1900","cliente":"PRIMAX","modelo":"BR2"},{"nombre":"BL7M BELLOWS ASSY","numero":"GP274A3400","cliente":"PRIMAX","modelo":"BL7M"},{"nombre":"SU2B BELLOWS ASSY","numero":"GP274S1900","cliente":"PRIMAX","modelo":"SU2B"},{"nombre":"C2B2 BELLOWS ASSY","numero":"GP274A4470","cliente":"PRIMAX","modelo":"C2B2"},{"nombre":"CX727 BELLOWS ASSY","numero":"GP274A3300","cliente":"PRIMAX","modelo":"CX727"},{"nombre":"MQ4A END COVER ASSY","numero":"R556354AA0","cliente":"MMX","modelo":"MQ4A PE"},{"nombre":"NX4A LEVER ASSY","numero":"GL771N4000","cliente":"MCM","modelo":"NX4A"},{"nombre":"BL7M LEVER ASSY","numero":"GL771BC000","cliente":"MCM","modelo":"BL7M"},{"nombre":"BR2 LEVER ASSY","numero":"GL770A1200","cliente":"MCM","modelo":"BR2"},{"nombre":"SU2B LEVER ASSY","numero":"GL771B3200","cliente":"MCM","modelo":"SU2B"},{"nombre":"TESLA RACK BUSHING","numero":"GP92400400","cliente":"MKDC","modelo":"MODEL 3"},{"nombre":"TESLA SCREW BUSHING","numero":"GP92400300","cliente":"MKDC","modelo":"MODEL 3"},{"nombre":"BL7M BUSH","numero":"GL689BC200","cliente":"MCM","modelo":"BL7M"},{"nombre":"SU2B HINGE BUSH","numero":"GM49533300","cliente":"MCM","modelo":"SU2B"},{"nombre":"BR2 NOISE DAMPER RING BLANCO","numero":"GP25501700","cliente":"PRIMAX","modelo":"BR2"},{"nombre":"BR2 NOISE DAMPER RING NEGRO","numero":"GP25501900","cliente":"PRIMAX","modelo":"BR2"},{"nombre":"TESLA NOISE DAMPER BLANCO","numero":"GR25501400","cliente":"MKDC","modelo":"MODEL 3"},{"nombre":"RIVIAN NOISE DAMPER NEGRO","numero":"GP255A2700","cliente":"MKDC","modelo":"RIVIAN"},{"nombre":"CX727 DUST CAP LHD","numero":"GP373A2900","cliente":"MCM","modelo":"CX727"},{"nombre":"CX727 DUST CAP RHD","numero":"GP373A3000","cliente":"MCM","modelo":"CX727"},{"nombre":"C2B2 DUST CAP","numero":"GP373B3500","cliente":"MCM","modelo":"C2B2"},{"nombre":"BR2 PE HEAD LAMP STRIP ASSY LH","numero":"R192114010","cliente":"MMX","modelo":"BR2 PE"},{"nombre":"BR2 PE HEAD LAMP STRIP ASSY RH","numero":"R192114020","cliente":"MMX","modelo":"BR2 PE"}];
+
+// ─────────────────────────────────────────────
+// DEFECTOS DEFAULT (con traducción coreana)
+// ─────────────────────────────────────────────
+const DEFECTOS_DEFAULT = [
+  {es:"Tiro Corto",           ko:"미충전 (Short Shot)"},
+  {es:"Quemada",              ko:"탄 자국 (Burn Mark)"},
+  {es:"Quebrada",             ko:"파손 (Broken)"},
+  {es:"Pieza Mezclada",       ko:"혼입 (Mixed Part)"},
+  {es:"Ensamble Incorrecto",  ko:"잘못된 조립 (Wrong Assembly)"},
+  {es:"Falta de Componente",  ko:"부품 누락 (Missing Component)"},
+  {es:"Contaminación en Resina", ko:"수지 오염 (Resin Contamination)"},
+  {es:"Contaminación sobre Pieza", ko:"부품 오염 (Part Contamination)"},
+  {es:"Daño",                 ko:"손상 (Damage)"},
+  {es:"Deformes",             ko:"변형 (Deformation)"},
+  {es:"Resina Incorrecta",    ko:"잘못된 수지 (Wrong Resin)"},
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let selectedShift = '';
+let selectedGroup = '';
+let pwdCallback   = null;   // función a llamar tras validar pwd
+
+function getBOM() {
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_PROD) || '[]');
+  return [...BOM_BASE, ...custom];
+}
+function getDefectos() {
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_DEF) || '[]');
+  return [...DEFECTOS_DEFAULT, ...custom];
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  buildClienteDropdown();
+  updateClock();
+  setInterval(updateClock, 1000);
+  autoDetectShift();
+  agregarDefecto(); // empezar con 1 fila de defecto
+  agregarDT();      // empezar con 1 fila de paro
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('fechaHora').textContent = '⏱ ' + now.toLocaleString('es-MX',{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('fechaHoraKo').textContent = now.toLocaleString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+function autoDetectShift() {
+  const h = new Date().getHours();
+  document.querySelectorAll('.shift-btn').forEach(b => {
+    if ((b.dataset.val==='DIA' && h>=6 && h<18) || (b.dataset.val==='NOCHE' && (h<6||h>=18))) b.click();
+  });
+}
+
+// ─────────────────────────────────────────────
+// DROPDOWNS CASCADA
+// ─────────────────────────────────────────────
+function buildClienteDropdown() {
+  const bom = getBOM();
+  const clientes = [...new Set(bom.map(p=>p.cliente).filter(Boolean))].sort();
+  const sel = document.getElementById('cliente');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+  clientes.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+  if (cur) sel.value = cur;
+}
+
+function filterModelos() {
+  const cliente = document.getElementById('cliente').value;
+  const mSel = document.getElementById('modelo');
+  mSel.innerHTML = '<option value="">-- Seleccionar --</option>';
+  document.getElementById('pieza').innerHTML = '<option value="">-- Seleccionar --</option>';
+  document.getElementById('numeroParte').value = '';
+  if (!cliente) return;
+  const modelos = [...new Set(getBOM().filter(p=>p.cliente===cliente).map(p=>p.modelo))].sort();
+  modelos.forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=m; mSel.appendChild(o); });
+}
+
+function filterPiezas() {
+  const cliente = document.getElementById('cliente').value;
+  const modelo  = document.getElementById('modelo').value;
+  const pSel = document.getElementById('pieza');
+  pSel.innerHTML = '<option value="">-- Seleccionar --</option>';
+  document.getElementById('numeroParte').value = '';
+  if (!cliente||!modelo) return;
+  getBOM().filter(p=>p.cliente===cliente&&p.modelo===modelo).forEach(p => {
+    const o=document.createElement('option'); o.value=p.nombre; o.textContent=p.nombre; o.dataset.numero=p.numero; pSel.appendChild(o);
+  });
+}
+
+function autoFillNumeroParte() {
+  const sel = document.getElementById('pieza');
+  document.getElementById('numeroParte').value = sel.options[sel.selectedIndex]?.dataset.numero || '';
+}
+
+// ─────────────────────────────────────────────
+// SHIFT / GROUP
+// ─────────────────────────────────────────────
+function selectShift(btn) {
+  document.querySelectorAll('.shift-btn').forEach(b => b.className='shift-btn');
+  selectedShift = btn.dataset.val;
+  btn.classList.add(selectedShift==='DIA'?'active-day':'active-night');
+}
+function selectGroup(btn) {
+  document.querySelectorAll('.group-btn').forEach(b => b.className='group-btn');
+  selectedGroup = btn.dataset.val;
+  btn.classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// MÉTRICAS
+// ─────────────────────────────────────────────
+function calcMetrics() {
+  const plan = parseFloat(document.getElementById('planProd').value)||0;
+  const prod = parseFloat(document.getElementById('pzasProducidas').value)||0;
+  const scrap= parseFloat(document.getElementById('pzasScrap').value)||0;
+  const td   = parseFloat(document.getElementById('tiempoMuerto').value)||0;
+  const productividad = plan>0 ? Math.min((prod/plan)*100,999) : 0;
+  const ftq  = prod>0 ? ((prod-scrap)/prod)*100 : 0;
+  const disp = ((720-td)/720)*100;
+  const oee  = (productividad/100)*(ftq/100)*(disp/100)*100;
+  const cc = (v,g,w)=>v>=g?'good':v>=w?'warn':'bad';
+  setM('metricProductividad', productividad>0?productividad.toFixed(1)+'%':'—', cc(productividad,85,70));
+  setM('metricFTQ', prod>0?ftq.toFixed(1)+'%':'—', cc(ftq,95,85));
+  setM('metricDisp', disp.toFixed(1)+'%', cc(disp,90,80));
+  setM('metricOEE', oee>0?oee.toFixed(1)+'%':'—', cc(oee,65,50));
+  validateScrapMatch();
+}
+function setM(id,val,cls){const e=document.getElementById(id);e.textContent=val;e.className='metric-value '+(cls||'');}
+
+// ─────────────────────────────────────────────
+// DEFECTOS — FILAS DINÁMICAS
+// ─────────────────────────────────────────────
+let defectRowId = 0;
+
+function makeDefectOptions() {
+  return getDefectos().map(d=>`<option value="${d.es}">${d.es} · ${d.ko}</option>`).join('');
+}
+
+function agregarDefecto() {
+  const id = ++defectRowId;
+  const defectos = getDefectos();
+  const row = document.createElement('div');
+  row.className = 'defect-row';
+  row.id = `drow_${id}`;
+  row.innerHTML = `
+    <select id="dsel_${id}" onchange="validateScrapMatch()">
+      <option value="">-- Tipo de Defecto / 불량 유형 --</option>
+      ${makeDefectOptions()}
+    </select>
+    <input type="number" id="dqty_${id}" min="0" placeholder="0" oninput="validateScrapMatch()" style="text-align:center;">
+    <button class="btn-del-defect" onclick="eliminarDefecto(${id})" title="Eliminar · 삭제">×</button>`;
+  document.getElementById('defectRows').appendChild(row);
+  validateScrapMatch();
+}
+
+function eliminarDefecto(id) {
+  const rows = document.querySelectorAll('.defect-row');
+  if (rows.length <= 1) { showToast('error','⚠️ Mínimo 1 defecto','최소 1개의 불량 유형이 필요합니다'); return; }
+  document.getElementById(`drow_${id}`)?.remove();
+  validateScrapMatch();
+}
+
+// ─────────────────────────────────────────────
+// VALIDAR MATCH SCRAP vs DEFECTOS
+// ─────────────────────────────────────────────
+function getDefectTotal() {
+  let total = 0;
+  document.querySelectorAll('.defect-row').forEach(row => {
+    const qty = parseFloat(row.querySelector('input[type=number]')?.value)||0;
+    total += qty;
+  });
+  return total;
+}
+
+function validateScrapMatch() {
+  const scrap = parseFloat(document.getElementById('pzasScrap').value)||0;
+  const defTotal = getDefectTotal();
+  const counter = document.getElementById('scrapCounter');
+  const vals    = document.getElementById('counterVals');
+  vals.textContent = `${defTotal} / ${scrap}`;
+
+  if (scrap === 0 && defTotal === 0) {
+    counter.className = 'scrap-counter';
+    vals.className = 'counter-vals';
+  } else if (defTotal === scrap) {
+    counter.className = 'scrap-counter ok';
+    vals.className = 'counter-vals ok';
+  } else if (defTotal < scrap) {
+    counter.className = 'scrap-counter warn';
+    vals.className = 'counter-vals warn';
+  } else {
+    counter.className = 'scrap-counter';
+    vals.className = 'counter-vals';
+  }
+}
+
+function getDefectosData() {
+  const result = [];
+  document.querySelectorAll('.defect-row').forEach(row => {
+    const tipo = row.querySelector('select')?.value;
+    const qty  = parseFloat(row.querySelector('input[type=number]')?.value)||0;
+    if (tipo && qty > 0) result.push({tipo, cantidad: qty});
+  });
+  return result;
+}
+
+// ─────────────────────────────────────────────
+// TIEMPO MUERTO — FILAS DINÁMICAS
+// ─────────────────────────────────────────────
+let dtRowId = 0;
+
+const DT_TIPOS = [
+  {es:'Falla de Máquina',    ko:'기계 고장'},
+  {es:'Falla de Molde',      ko:'금형 고장'},
+  {es:'Cambio de Molde',     ko:'금형 교체'},
+  {es:'Mantenimiento Preventivo', ko:'예방 정비'},
+  {es:'Falta de Material',   ko:'재료 부족'},
+  {es:'Ajuste de Proceso',   ko:'공정 조정'},
+  {es:'Paro por Calidad',    ko:'품질 정지'},
+  {es:'Limpieza de Máquina', ko:'기계 청소'},
+  {es:'Paro por Seguridad',  ko:'안전 정지'},
+  {es:'Otro',                ko:'기타'},
+];
+
+function makeDTOptions() {
+  return DT_TIPOS.map(t=>`<option value="${t.es}">${t.es} · ${t.ko}</option>`).join('');
+}
+
+function agregarDT() {
+  const id = ++dtRowId;
+  const row = document.createElement('div');
+  row.className = 'dt-row';
+  row.id = `dtrow_${id}`;
+  row.innerHTML = `
+    <select id="dtsel_${id}" class="dt-tipo" onchange="validateDTMatch()">
+      <option value="">-- Tipo / 유형 --</option>
+      ${makeDTOptions()}
+    </select>
+    <input type="number" id="dtmin_${id}" min="0" max="720" placeholder="0" oninput="validateDTMatch()" style="text-align:center;">
+    <input type="text" id="dtmot_${id}" class="dt-motivo" placeholder="Motivo del paro · 정지 원인" style="grid-column:3/4;">
+    <button class="btn-del-defect" onclick="eliminarDT(${id})" title="Eliminar · 삭제">×</button>`;
+  document.getElementById('dtRows').appendChild(row);
+  validateDTMatch();
+}
+
+function eliminarDT(id) {
+  const rows = document.querySelectorAll('.dt-row');
+  if (rows.length <= 1) { showToast('error','⚠️ Mínimo 1 registro de paro','최소 1개의 비가동 기록이 필요합니다'); return; }
+  document.getElementById(`dtrow_${id}`)?.remove();
+  validateDTMatch();
+}
+
+function getDTTotal() {
+  let total = 0;
+  document.querySelectorAll('.dt-row').forEach(row => {
+    total += parseFloat(row.querySelector('input[type=number]')?.value)||0;
+  });
+  return total;
+}
+
+function validateDTMatch() {
+  const tm  = parseFloat(document.getElementById('tiempoMuerto').value)||0;
+  const dtT = getDTTotal();
+  const bar = document.getElementById('dtTotalBar');
+  const val = document.getElementById('dtTotalVal');
+  val.textContent = `${dtT} / ${tm} min`;
+  if (tm === 0 && dtT === 0) {
+    bar.className = 'dt-total-bar'; val.className = 'dt-total-val';
+  } else if (dtT === tm) {
+    bar.className = 'dt-total-bar'; val.className = 'dt-total-val'; bar.style.background='rgba(63,185,80,.06)'; bar.style.borderColor='rgba(63,185,80,.3)'; val.style.color='var(--success)';
+  } else {
+    bar.className = 'dt-total-bar warn'; val.className = 'dt-total-val warn'; bar.style.background=''; bar.style.borderColor=''; val.style.color='';
+  }
+}
+
+function getDTData() {
+  const result = [];
+  document.querySelectorAll('.dt-row').forEach(row => {
+    const tipo   = row.querySelector('select')?.value;
+    const min    = parseFloat(row.querySelector('input[type=number]')?.value)||0;
+    const motivo = row.querySelector('input[type=text]')?.value.trim()||'';
+    if ((tipo || motivo) && min > 0) result.push({tipo, minutos: min, motivo});
+  });
+  return result;
+}
+
+// ─────────────────────────────────────────────
+// VALIDACIÓN FORMULARIO
+// ─────────────────────────────────────────────
+function validate() {
+  const fields = [
+    {id:'numEmpleado',es:'N° Empleado',ko:'사번'},
+    {id:'maquina',es:'Máquina',ko:'기계번호'},
+    {id:'cliente',es:'Cliente',ko:'고객사'},
+    {id:'modelo',es:'Modelo',ko:'모델'},
+    {id:'pieza',es:'Nombre de Pieza',ko:'부품명'},
+    {id:'planProd',es:'Plan de Producción',ko:'생산계획'},
+    {id:'pzasProducidas',es:'Piezas Producidas',ko:'생산수량'},
+    {id:'pzasScrap',es:'Piezas Scrap',ko:'스크랩'},
+    {id:'tiempoMuerto',es:'Tiempo Muerto',ko:'다운타임'},
+  ];
+  let errors = [];
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    const empty = !el.value || el.value==='';
+    el.classList.toggle('error', empty);
+    if (empty) errors.push(`${f.es} (${f.ko})`);
+  });
+  if (!selectedShift) errors.push('Turno (교대)');
+  if (!selectedGroup) errors.push('Grupo (그룹)');
+
+  // Validar match scrap vs defectos
+  const scrap = parseFloat(document.getElementById('pzasScrap').value)||0;
+  const defTotal = getDefectTotal();
+  if (scrap > 0 && defTotal !== scrap) {
+    errors.push(`Defectos: suma (${defTotal}) ≠ Scrap (${scrap}) · 불량 합계 불일치`);
+  }
+  if (scrap > 0 && getDefectosData().length === 0) errors.push('Registra al menos un defecto · 불량 유형을 1개 이상 입력하세요');
+
+  // Validar match tiempo muerto vs registros de paro
+  const td = parseFloat(document.getElementById('tiempoMuerto').value)||0;
+  const dtTotal = getDTTotal();
+  if (td > 0 && dtTotal !== td) {
+    errors.push(`T. Muerto: registros (${dtTotal} min) ≠ capturado (${td} min) · 비가동 합계 불일치`);
+  }
+  if (td > 0 && getDTData().length === 0) errors.push('Registra al menos un paro de máquina/molde · 비가동 기록 1개 이상 필요');
+  return errors;
+}
+
+// ─────────────────────────────────────────────
+// GUARDAR
+// ─────────────────────────────────────────────
+async function guardarRegistro() {
+  const errors = validate();
+  if (errors.length > 0) {
+    showToast('error','⚠️ Campos requeridos / 필수 항목', errors.slice(0,2).join(' | '));
+    return;
+  }
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Guardando... / 저장 중...<small>Por favor espere</small>';
+
+  const plan = parseFloat(document.getElementById('planProd').value)||0;
+  const prod = parseFloat(document.getElementById('pzasProducidas').value)||0;
+  const scrap= parseFloat(document.getElementById('pzasScrap').value)||0;
+  const td   = parseFloat(document.getElementById('tiempoMuerto').value)||0;
+  const productividad = plan>0?(prod/plan)*100:0;
+  const ftq  = prod>0?((prod-scrap)/prod)*100:0;
+  const disp = ((720-td)/720)*100;
+  const oee  = (productividad/100)*(ftq/100)*(disp/100)*100;
+
+  const registro = {
+    numEmpleado: document.getElementById('numEmpleado').value.trim(),
+    turno: selectedShift, grupo: selectedGroup,
+    maquina: document.getElementById('maquina').value.trim(),
+    cliente: document.getElementById('cliente').value,
+    modelo: document.getElementById('modelo').value,
+    pieza: document.getElementById('pieza').value,
+    numeroParte: document.getElementById('numeroParte').value,
+    planProd: plan, pzasProducidas: prod, pzasScrap: scrap, tiempoMuerto: td,
+    defectos: getDefectosData(),
+    parosMaquina: getDTData(),
+    productividad: +productividad.toFixed(2), ftq: +ftq.toFixed(2),
+    disponibilidad: +disp.toFixed(2), oee: +oee.toFixed(2),
+    timestamp: new Date().toISOString(),
+    fecha: new Date().toLocaleDateString('es-MX'),
+    hora: new Date().toLocaleTimeString('es-MX'),
+  };
+
+  if (window.__firebaseReady && window.__db) {
+    try {
+      await window.__addDoc(window.__collection(window.__db,'scrap_registros'), {...registro, serverTime: window.__serverTimestamp()});
+      showToast('success','✅ Registro guardado / 기록 저장 완료', registro.pieza);
+    } catch(e) { guardarLocal(registro); showToast('success','✅ Guardado localmente','⚠️ Firebase no configurado'); }
+  } else {
+    guardarLocal(registro);
+    showToast('success','✅ Guardado localmente / 로컬 저장','Configure Firebase para sincronizar');
+  }
+  resetForm();
+  btn.disabled = false;
+  btn.innerHTML = '💾 GUARDAR REGISTRO<small>기록 저장</small>';
+}
+
+function guardarLocal(r) {
+  const arr = JSON.parse(localStorage.getItem(LS_DATA)||'[]');
+  arr.push(r);
+  localStorage.setItem(LS_DATA, JSON.stringify(arr));
+}
+
+function resetForm() {
+  ['numEmpleado','maquina','planProd','pzasProducidas','pzasScrap','tiempoMuerto','numeroParte'].forEach(id=>{
+    document.getElementById(id).value=''; document.getElementById(id).classList.remove('error');
+  });
+  ['cliente','modelo','pieza'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.innerHTML='<option value="">-- Seleccionar --</option>';
+    el.classList.remove('error');
+  });
+  buildClienteDropdown();
+  ['metricProductividad','metricFTQ','metricDisp','metricOEE'].forEach(id=>setM(id,'—',''));
+  document.getElementById('defectRows').innerHTML='';
+  defectRowId=0;
+  agregarDefecto();
+  validateScrapMatch();
+  document.getElementById('dtRows').innerHTML='';
+  dtRowId=0;
+  agregarDT();
+  validateDTMatch();
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function showToast(type, title, ko) {
+  const t=document.getElementById('toast');
+  document.getElementById('toastTitle').textContent=title;
+  document.getElementById('toastKo').textContent=ko||'';
+  t.className=`toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'),4500);
+}
+
+// ─────────────────────────────────────────────
+// PASSWORD FLOW
+// ─────────────────────────────────────────────
+function solicitarAdmin() { pedirPassword(abrirAdmin); }
+
+function pedirPassword(callback) {
+  pwdCallback = callback;
+  document.getElementById('pwdInput').value='';
+  document.getElementById('pwdError').style.display='none';
+  document.getElementById('pwdOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('pwdInput').focus(),100);
+}
+
+function checkPwd() {
+  const val = document.getElementById('pwdInput').value;
+  if (val === ADMIN_PWD) {
+    document.getElementById('pwdOverlay').classList.remove('open');
+    if (pwdCallback) pwdCallback();
+  } else {
+    document.getElementById('pwdError').style.display='block';
+    document.getElementById('pwdInput').value='';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+function cerrarPwd() { document.getElementById('pwdOverlay').classList.remove('open'); }
+
+// ─────────────────────────────────────────────
+// ADMIN MODAL
+// ─────────────────────────────────────────────
+function abrirAdmin() {
+  renderCustomProds();
+  renderDefectAdmin();
+  document.getElementById('adminOverlay').classList.add('open');
+}
+
+function cerrarAdmin(e) {
+  if (!e || e.target===document.getElementById('adminOverlay')) {
+    document.getElementById('adminOverlay').classList.remove('open');
+    buildClienteDropdown(); // refrescar dropdowns
+  }
+}
+
+function switchTab(panelId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── PRODUCTOS CUSTOM ──
+function renderCustomProds() {
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_PROD)||'[]');
+  const el = document.getElementById('customProdList');
+  if (!custom.length) { el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0;">No hay productos personalizados · 사용자 정의 제품 없음</p>'; return; }
+  el.innerHTML = custom.map((p,i)=>`
+    <div class="prod-item">
+      <div class="prod-item-info">
+        <div class="prod-item-name">${p.nombre}</div>
+        <div class="prod-item-meta">
+          <span class="prod-tag">${p.cliente}</span>
+          <span class="prod-tag" style="background:rgba(88,166,255,.15);color:var(--blue)">${p.modelo}</span>
+          <span style="font-size:11px;color:var(--muted);">${p.numero}</span>
+        </div>
+      </div>
+      <button class="btn-remove-prod" onclick="eliminarProducto(${i})" title="Eliminar">×</button>
+    </div>`).join('');
+}
+
+function agregarProducto() {
+  const nombre  = document.getElementById('newNombre').value.trim();
+  const numero  = document.getElementById('newNumero').value.trim();
+  const cliente = document.getElementById('newCliente').value.trim();
+  const modelo  = document.getElementById('newModelo').value.trim();
+  if (!nombre||!numero||!cliente||!modelo) { showToast('error','⚠️ Todos los campos son requeridos','모든 필드를 입력하세요'); return; }
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_PROD)||'[]');
+  custom.push({nombre,numero,cliente,modelo});
+  localStorage.setItem(LS_CUSTOM_PROD, JSON.stringify(custom));
+  ['newNombre','newNumero','newCliente','newModelo'].forEach(id=>document.getElementById(id).value='');
+  renderCustomProds();
+  showToast('success','✅ Producto agregado / 제품 추가 완료', nombre);
+}
+
+function eliminarProducto(idx) {
+  if (!confirm('¿Eliminar este producto? · 이 제품을 삭제하시겠습니까?')) return;
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_PROD)||'[]');
+  custom.splice(idx,1);
+  localStorage.setItem(LS_CUSTOM_PROD, JSON.stringify(custom));
+  renderCustomProds();
+}
+
+// ── DEFECTOS ADMIN ──
+function renderDefectAdmin() {
+  const defectos = getDefectos();
+  const el = document.getElementById('defectAdminList');
+  el.innerHTML = defectos.map((d,i)=>`
+    <div class="defect-admin-item">
+      <div class="defect-admin-es">${d.es}</div>
+      <div class="defect-admin-ko">${d.ko||'—'}</div>
+      ${i >= DEFECTOS_DEFAULT.length
+        ? `<button class="btn-remove-prod" onclick="eliminarDefectoAdmin(${i - DEFECTOS_DEFAULT.length})" title="Eliminar">×</button>`
+        : `<span style="font-size:10px;color:var(--muted);padding:0 8px;white-space:nowrap;">🔒 Base</span>`}
+    </div>`).join('');
+}
+
+function agregarDefectoAdmin() {
+  const es = document.getElementById('newDefectEs').value.trim();
+  const ko = document.getElementById('newDefectKo').value.trim();
+  if (!es) { showToast('error','⚠️ El nombre en español es requerido','스페인어 이름을 입력하세요'); return; }
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_DEF)||'[]');
+  custom.push({es, ko: ko||''});
+  localStorage.setItem(LS_CUSTOM_DEF, JSON.stringify(custom));
+  document.getElementById('newDefectEs').value='';
+  document.getElementById('newDefectKo').value='';
+  renderDefectAdmin();
+  // Actualizar selects de defectos abiertos
+  document.querySelectorAll('.defect-row select').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">-- Tipo de Defecto / 불량 유형 --</option>${makeDefectOptions()}`;
+    if (cur) sel.value = cur;
+  });
+  showToast('success','✅ Defecto agregado / 불량 유형 추가 완료', es);
+}
+
+function eliminarDefectoAdmin(customIdx) {
+  if (!confirm('¿Eliminar este tipo de defecto? · 이 불량 유형을 삭제하시겠습니까?')) return;
+  const custom = JSON.parse(localStorage.getItem(LS_CUSTOM_DEF)||'[]');
+  custom.splice(customIdx,1);
+  localStorage.setItem(LS_CUSTOM_DEF, JSON.stringify(custom));
+  renderDefectAdmin();
+}
+</script>
+</body>
+</html>
