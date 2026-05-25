@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPM | Dashboard OEE / OEE 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ══════════════════════════════════════════════════════════
+  // 🔧 MISMA CONFIGURACIÓN QUE formulario.html
+  // ══════════════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyDMTedZv0hJlq93Ver5mAUNFVFxvnrEj48",
+    authDomain: "scrap-b1e4b.firebaseapp.com",
+    projectId: "scrap-b1e4b",
+    storageBucket: "scrap-b1e4b.firebasestorage.app",
+    messagingSenderId: "359052896230",
+    appId: "1:359052896230:web:f22de47846294c69055827"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Escuchar en tiempo real
+  const q = query(collection(db, 'scrap_registros'), orderBy('timestamp', 'asc'));
+  onSnapshot(q, (snap) => {
+    const data = [];
+    snap.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+    window.__firebaseData = data;
+    if (window.refreshDashboard) window.refreshDashboard(data);
+  }, () => {
+    // Firebase no configurado — usar localStorage
+    if (window.loadLocalData) window.loadLocalData();
+  });
+</script>
+
+<style>
+:root {
+  --black: #080b0f;
+  --dark: #0d1117;
+  --panel: #13181f;
+  --panel2: #161c24;
+  --border: #1e2530;
+  --accent: #e8c93a;
+  --accent2: #ff6b35;
+  --blue: #58a6ff;
+  --purple: #bc8cff;
+  --text: #cdd9e5;
+  --muted: #636e7b;
+  --success: #3fb950;
+  --error: #f85149;
+  --warn: #d29922;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: 'Barlow', 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  padding: 0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+}
+
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 28px; max-width: 1400px; margin: 0 auto;
+}
+
+.logo-block { display: flex; align-items: center; gap: 14px; }
+.logo-mark {
+  width: 40px; height: 40px; background: var(--accent); color: var(--black);
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  clip-path: polygon(10% 0%,90% 0%,100% 50%,90% 100%,10% 100%,0% 50%);
+}
+.logo-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
+.logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.3);
+  color: var(--success); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--success);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+.btn {
+  padding: 8px 16px; border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; border: 1.5px solid;
+  cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex;
+  align-items: center; gap: 6px; white-space: nowrap;
+}
+.btn-ghost { border-color: var(--border); color: var(--muted); background: transparent; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,201,58,0.06); }
+.btn-success { border-color: var(--success); color: var(--success); background: rgba(63,185,80,0.1); }
+.btn-success:hover { background: rgba(63,185,80,0.2); transform: translateY(-1px); }
+.btn-danger { border-color: var(--error); color: var(--error); background: rgba(248,81,73,0.1); }
+.btn-danger:hover { background: rgba(248,81,73,0.2); }
+.btn-excel { border-color: #1d6f42; color: #3fb950; background: rgba(63,185,80,0.08); }
+.btn-excel:hover { background: rgba(63,185,80,0.18); transform: translateY(-1px); }
+
+/* ── LAYOUT ── */
+.page { max-width: 1400px; margin: 0 auto; padding: 24px 28px 60px; }
+
+/* ── KPI ROW ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 22px; position: relative; overflow: hidden;
+  transition: border-color 0.3s;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--kpi-color, var(--accent));
+}
+.kpi-card:hover { border-color: var(--kpi-color, var(--accent)); }
+
+.kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.kpi-ko { font-family: 'Noto Sans KR', sans-serif; font-size: 10px; color: var(--muted); opacity: 0.6; margin-top: 2px; }
+.kpi-value {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 48px; font-weight: 900;
+  line-height: 1; color: var(--kpi-color, var(--accent)); margin: 8px 0 0;
+  transition: color 0.5s;
+}
+.kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-h {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.section-h::before { content: ''; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+/* ── CHARTS GRID ── */
+.charts-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px;
+}
+.charts-grid.wide { grid-template-columns: 2fr 1fr; }
+
+.chart-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.chart-card-header {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chart-card-title { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.chart-card-body { padding: 16px; }
+
+canvas { max-height: 220px; }
+
+/* ── TABLE ── */
+.table-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.table-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.data-table th {
+  padding: 10px 14px; background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  text-align: left; white-space: nowrap;
+}
+
+.data-table td {
+  padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text); transition: background 0.15s;
+}
+.data-table tr:hover td { background: rgba(255,255,255,0.025); }
+.data-table tr:last-child td { border-bottom: none; }
+
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.pill-dia { background: rgba(232,201,58,0.15); color: var(--accent); }
+.pill-noche { background: rgba(88,166,255,0.15); color: var(--blue); }
+.pill-a { background: rgba(255,107,53,0.15); color: var(--accent2); }
+.pill-b { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+/* Scrap percentage coloring */
+.val-good { color: var(--success); font-weight: 600; }
+.val-warn { color: var(--warn); font-weight: 600; }
+.val-bad { color: var(--error); font-weight: 600; }
+
+/* ── CIERRE TURNO MODAL ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 16px;
+  padding: 32px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+}
+
+.modal-title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900;
+  letter-spacing: 2px; color: var(--accent); margin-bottom: 4px;
+}
+.modal-sub { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+.oee-display {
+  text-align: center; padding: 24px; background: rgba(232,201,58,0.05);
+  border: 1px solid rgba(232,201,58,0.2); border-radius: 12px; margin-bottom: 24px;
+}
+.oee-big {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 80px; font-weight: 900;
+  line-height: 1; color: var(--accent);
+}
+.oee-label { font-size: 13px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+.rubros-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+
+.rubro-box {
+  padding: 16px; border-radius: 10px; text-align: center;
+  border: 1px solid var(--border);
+}
+.rubro-val {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 800; line-height: 1;
+}
+.rubro-name { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.rubro-ko { font-family: 'Noto Sans KR', sans-serif; font-size: 10px; color: var(--muted); opacity: 0.6; margin-top: 2px; }
+
+.rubro-box.prod { border-color: rgba(232,201,58,0.3); }
+.rubro-box.prod .rubro-val { color: var(--accent); }
+.rubro-box.ftq { border-color: rgba(63,185,80,0.3); }
+.rubro-box.ftq .rubro-val { color: var(--success); }
+.rubro-box.disp { border-color: rgba(88,166,255,0.3); }
+.rubro-box.disp .rubro-val { color: var(--blue); }
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+
+/* ── TIMESTAMP ── */
+.page-footer {
+  text-align: center; font-size: 11px; color: var(--muted); padding: 20px 0;
+  letter-spacing: 1px; font-family: 'Barlow Condensed', sans-serif;
+}
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center; padding: 60px 20px;
+  font-family: 'Barlow Condensed', sans-serif; color: var(--muted);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty h3 { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+.empty p { font-size: 13px; margin-top: 6px; }
+
+/* ── RESPONSIVE ── */
+/* ── PERIOD TABS ── */
+.period-tab {
+  padding: 6px 16px; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  border: 1.5px solid var(--border); color: var(--muted); background: transparent;
+  cursor: pointer; transition: all .2s;
+}
+.period-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(232,201,58,.08); }
+.period-tab:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+/* ── INSIGHT PANEL ── */
+.insight-panel {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.insight-placeholder {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 32px 20px;
+}
+.insight-content { flex: 1; overflow-y: auto; }
+.insight-header {
+  padding: 16px 18px; background: rgba(232,201,58,.04);
+  border-bottom: 1px solid var(--border);
+}
+.insight-period {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+}
+.insight-oee-val {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 44px; font-weight: 900;
+  line-height: 1; color: var(--accent);
+}
+.insight-status {
+  font-size: 12px; font-weight: 600; margin-top: 4px;
+}
+
+.insight-rubros {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.ir-box { text-align: center; }
+.ir-val {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; line-height: 1;
+}
+.ir-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.ir-ko  { font-family: 'Noto Sans KR', sans-serif; font-size: 9px; color: var(--muted); opacity: .5; }
+
+.insight-causes { padding: 12px 14px; }
+.ic-title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.ic-item {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
+  border-radius: 6px; margin-bottom: 6px; font-size: 12px;
+}
+.ic-item.prod-cause { background: rgba(232,201,58,.08); border-left: 3px solid var(--accent); }
+.ic-item.ftq-cause  { background: rgba(248,81,73,.08);  border-left: 3px solid var(--error); }
+.ic-item.disp-cause { background: rgba(88,166,255,.08); border-left: 3px solid var(--blue); }
+.ic-item.ok-cause   { background: rgba(63,185,80,.08);  border-left: 3px solid var(--success); }
+.ic-badge {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+  margin-top: 1px;
+}
+.ic-badge.prod { background: rgba(232,201,58,.2); color: var(--accent); }
+.ic-badge.ftq  { background: rgba(248,81,73,.2);  color: var(--error); }
+.ic-badge.disp { background: rgba(88,166,255,.2); color: var(--blue); }
+.ic-badge.ok   { background: rgba(63,185,80,.2);  color: var(--success); }
+.ic-text { flex: 1; line-height: 1.4; }
+.ic-text strong { display: block; font-size: 12px; color: var(--text); }
+.ic-text small  { font-size: 10px; color: var(--muted); font-family: 'Noto Sans KR', sans-serif; }
+
+/* period mini KPIs */
+.pkpi {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; text-align: center; position: relative; overflow: hidden;
+}
+.pkpi::before { content:''; position:absolute; top:0;left:0;right:0;height:2px; background: var(--pkpi-c, var(--accent)); }
+.pkpi-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:900; line-height:1; color: var(--pkpi-c, var(--accent)); }
+.pkpi-lbl { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+.pkpi-ko  { font-family:'Noto Sans KR',sans-serif; font-size:9px; color:var(--muted); opacity:.5; }
+
+@media(max-width:900px) {
+  #trendLayout { grid-template-columns: 1fr !important; }
+  #periodKPIs  { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── QR MODAL ── */
+.qr-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.qr-overlay.open { display: flex; }
+
+.qr-modal {
+  background: #13181f; border: 1px solid var(--border); border-radius: 20px;
+  padding: 36px 40px; width: 90%; max-width: 460px; text-align: center;
+  box-shadow: 0 32px 100px rgba(0,0,0,0.85);
+  animation: qrPop .3s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes qrPop { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
+
+.qr-title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900;
+  letter-spacing: 3px; color: var(--accent); margin-bottom: 4px;
+}
+.qr-sub {
+  font-family: 'Noto Sans KR', sans-serif; font-size: 12px; color: var(--muted);
+  margin-bottom: 24px;
+}
+.qr-box {
+  background: #fff; border-radius: 16px; padding: 18px;
+  display: inline-block; margin-bottom: 20px;
+  box-shadow: 0 0 0 4px rgba(232,201,58,0.25), 0 8px 32px rgba(0,0,0,0.5);
+}
+.qr-url-bar {
+  background: var(--panel2, #0d1117); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.qr-url-text {
+  flex: 1; font-family: 'Barlow Condensed', sans-serif; font-size: 13px;
+  color: var(--blue); word-break: break-all; text-align: left; letter-spacing: .5px;
+}
+.qr-copy-btn {
+  background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.3);
+  color: var(--blue); border-radius: 6px; padding: 5px 12px;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .2s; white-space: nowrap; letter-spacing: 1px;
+}
+.qr-copy-btn:hover { background: rgba(88,166,255,.25); }
+.qr-hint {
+  font-size: 11px; color: var(--muted); margin-bottom: 20px; line-height: 1.6;
+}
+.qr-hint span { font-family: 'Noto Sans KR', sans-serif; display: block; font-size: 10px; opacity: .7; }
+.qr-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-qr-form {
+  padding: 12px 24px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+  border: none; cursor: pointer; transition: all .2s;
+  background: var(--accent); color: var(--black);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.btn-qr-form small { font-size: 11px; font-family: 'Noto Sans KR', sans-serif; font-weight: 400; letter-spacing: 0; }
+.btn-qr-form:hover { background: #f0d040; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(232,201,58,.4); }
+.btn-qr-close {
+  padding: 12px 20px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  border: 1.5px solid var(--border); color: var(--muted); background: transparent; cursor: pointer; transition: all .2s;
+}
+.btn-qr-close:hover { border-color: var(--accent); color: var(--accent); }
+.btn-qr { border-color: var(--purple); color: var(--purple); background: rgba(188,140,255,0.1); }
+.btn-qr:hover { background: rgba(188,140,255,0.2); transform: translateY(-1px); }
+
+@media (max-width: 900px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .charts-grid, .charts-grid.wide { grid-template-columns: 1fr; }
+  .rubros-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .page { padding: 16px 14px 60px; }
+  .header-inner { padding: 10px 14px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi-value { font-size: 36px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-block">
+      <div class="logo-mark">H</div>
+      <div>
+        <div class="logo-title">HPM PROCESS OEE</div>
+        <div class="logo-sub">공정 효율 대시보드 · Process Efficiency Monitor</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <button class="btn btn-qr" onclick="abrirQR()">📱 QR · Formulario</button>
+      <button class="btn btn-ghost" onclick="window.open('formulario.html','_blank')">📋 Formulario</button>
+      <button class="btn btn-excel" onclick="exportarExcel()">📊 Excel</button>
+      <button class="btn btn-danger" onclick="abrirCierre()">🔒 Cierre de Turno <span style="font-size:10px;font-family:'Noto Sans KR'">교대 마감</span></button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="page">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card" style="--kpi-color: var(--accent)">
+      <div class="kpi-label">OEE General</div>
+      <div class="kpi-ko">종합 설비 효율</div>
+      <div class="kpi-value" id="kpiOEE">—</div>
+      <div class="kpi-sub">Meta: ≥ 65% · 목표</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--accent2)">
+      <div class="kpi-label">Productividad</div>
+      <div class="kpi-ko">생산성</div>
+      <div class="kpi-value" id="kpiProd">—</div>
+      <div class="kpi-sub">Plan vs Real · 계획 대비 실적</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--success)">
+      <div class="kpi-label">FTQ / Calidad</div>
+      <div class="kpi-ko">품질률</div>
+      <div class="kpi-value" id="kpiFTQ">—</div>
+      <div class="kpi-sub">100% - %Scrap · 불량률</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--blue)">
+      <div class="kpi-label">Disponibilidad</div>
+      <div class="kpi-ko">가동률</div>
+      <div class="kpi-value" id="kpiDisp">—</div>
+      <div class="kpi-sub">Tiempo Activo / 720 min</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="section-title">
+    <div class="section-h">Gráficos de Desempeño · 성과 차트</div>
+    <span id="lastUpdate" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+
+  <div class="charts-grid" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Productividad por Registro · 생산성</span>
+      </div>
+      <div class="chart-card-body"><canvas id="chartProd"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">FTQ / Scrap % · 품질률</span>
+      </div>
+      <div class="chart-card-body"><canvas id="chartFTQ"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Disponibilidad · 가동률</span>
+      </div>
+      <div class="chart-card-body"><canvas id="chartDisp"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-grid wide" style="margin-bottom:24px;">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">OEE por Turno / Registro · OEE 추이</span>
+      </div>
+      <div class="chart-card-body"><canvas id="chartOEE"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Scrap por Máquina · 기계별 스크랩</span>
+      </div>
+      <div class="chart-card-body"><canvas id="chartScrapMaq"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── ANÁLISIS OEE SEMANAL / MENSUAL ── -->
+  <div class="section-title" style="margin-top:8px;">
+    <div class="section-h">Tendencia OEE — Semanal &amp; Mensual · OEE 주간/월간 추이</div>
+    <div style="display:flex;gap:8px;">
+      <button class="period-tab active" id="tabSemanal" onclick="switchPeriod('semanal')">📅 Semanal · 주간</button>
+      <button class="period-tab" id="tabMensual" onclick="switchPeriod('mensual')">📆 Mensual · 월간</button>
+    </div>
+  </div>
+
+  <!-- OEE Trend Chart + Insight Panel -->
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:16px;margin-bottom:24px;" id="trendLayout">
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title" id="trendChartTitle">OEE Semanal · 주간 OEE</span>
+        <span style="font-size:11px;color:var(--muted);">👆 Toca/Clic un punto para ver causas · 점을 클릭하면 원인을 확인</span>
+      </div>
+      <div class="chart-card-body" style="min-height:240px;"><canvas id="chartTrend"></canvas></div>
+    </div>
+
+    <!-- INSIGHT PANEL -->
+    <div class="insight-panel" id="insightPanel">
+      <div class="insight-placeholder" id="insightPlaceholder">
+        <div style="font-size:36px;opacity:.3;">👆</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px;text-align:center;">
+          Selecciona un punto en la gráfica para ver el análisis de causas
+          <span style="display:block;font-family:'Noto Sans KR';font-size:11px;margin-top:4px;">그래프의 점을 선택하면 원인 분석을 볼 수 있습니다</span>
+        </div>
+      </div>
+      <div class="insight-content" id="insightContent" style="display:none;">
+        <div class="insight-header">
+          <div class="insight-period" id="insightPeriod"></div>
+          <div class="insight-oee-val" id="insightOEEVal"></div>
+          <div class="insight-status" id="insightStatus"></div>
+        </div>
+        <div class="insight-rubros" id="insightRubros"></div>
+        <div class="insight-causes" id="insightCauses"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparativa Semanal/Mensual mini-KPIs -->
+  <div id="periodKPIs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;"></div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="section-h">Registros del Turno · 교대 기록</div>
+      <span id="countBadge" style="font-size:12px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:1px;"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table" id="tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Hora / 시간</th>
+            <th>Empleado / 사번</th>
+            <th>Turno · Grp</th>
+            <th>Máq. / 기계</th>
+            <th>Cliente</th>
+            <th>Modelo</th>
+            <th>Pieza / 부품</th>
+            <th>N° Parte</th>
+            <th>Plan</th>
+            <th>Real</th>
+            <th>Scrap</th>
+            <th>T.Muerto</th>
+            <th>Prod%</th>
+            <th>FTQ%</th>
+            <th>Disp%</th>
+            <th>OEE%</th>
+          </tr>
+        </thead>
+        <tbody id="tablaBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty" style="display:none;">
+      <div class="empty-icon">📊</div>
+      <h3>SIN DATOS · 데이터 없음</h3>
+      <p>Captura registros en el formulario · 양식에서 기록을 입력하세요</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGE FOOTER -->
+<div class="page-footer" id="pageFooter"></div>
+
+<!-- ══════════ MODAL QR — FORMULARIO ══════════ -->
+<div class="qr-overlay" id="qrOverlay" onclick="cerrarQR(event)">
+  <div class="qr-modal" onclick="event.stopPropagation()">
+    <div class="qr-title">📱 ACCESO AL FORMULARIO</div>
+    <div class="qr-sub">입력 양식 접근 · Escanea el QR con el celular del operador</div>
+
+    <div class="qr-box">
+      <div id="qrCanvas"></div>
+    </div>
+
+    <div class="qr-url-bar">
+      <div class="qr-url-text" id="qrUrlText">—</div>
+      <button class="qr-copy-btn" onclick="copiarURL()">📋 Copiar</button>
+    </div>
+
+    <div class="qr-hint">
+      Apunta la cámara del celular al código QR para abrir el formulario de captura.
+      <span>핸드폰 카메라로 QR 코드를 스캔하면 입력 양식이 열립니다.</span>
+    </div>
+
+    <div class="qr-actions">
+      <button class="btn-qr-form" onclick="window.open('formulario.html','_blank')">
+        📋 ABRIR FORMULARIO
+        <small>입력 양식 열기</small>
+      </button>
+      <button class="btn-qr-close" onclick="cerrarQR()">✕ Cerrar · 닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL CIERRE DE TURNO ══════════ -->
+<div class="overlay" id="overlay" onclick="cerrarModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">🔒 CIERRE DE TURNO</div>
+    <div class="modal-sub">교대 마감 — Síntesis OEE General del Proceso</div>
+
+    <div class="oee-display">
+      <div class="oee-big" id="modalOEE">—</div>
+      <div class="oee-label">OEE General · 종합 설비 효율</div>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted)" id="modalOEEStatus"></div>
+    </div>
+
+    <div class="rubros-grid">
+      <div class="rubro-box prod">
+        <div class="rubro-val" id="modalProd">—</div>
+        <div class="rubro-name">Productividad</div>
+        <div class="rubro-ko">생산성 · Plan vs Real</div>
+      </div>
+      <div class="rubro-box ftq">
+        <div class="rubro-val" id="modalFTQ">—</div>
+        <div class="rubro-name">FTQ / Calidad</div>
+        <div class="rubro-ko">품질률 · 100% − %Scrap</div>
+      </div>
+      <div class="rubro-box disp">
+        <div class="rubro-val" id="modalDisp">—</div>
+        <div class="rubro-name">Disponibilidad</div>
+        <div class="rubro-ko">가동률 · Tiempo activo</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;line-height:2;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>📦 Total Registros: <strong id="mTotalReg">—</strong></div>
+        <div>🏭 Plan Total: <strong id="mPlanTotal">—</strong> pzas</div>
+        <div>✅ Real Total: <strong id="mRealTotal">—</strong> pzas</div>
+        <div>❌ Scrap Total: <strong id="mScrapTotal">—</strong> pzas</div>
+        <div>⏱ T. Muerto Total: <strong id="mTMTotal">—</strong> min</div>
+        <div>📅 Fecha: <strong id="mFecha">—</strong></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-excel" onclick="exportarExcel(); cerrarModal()">📊 Exportar Excel · 엑셀 내보내기</button>
+      <button class="btn btn-ghost" onclick="cerrarModal()">✕ Cerrar · 닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CHART.JS CONFIG
+// ══════════════════════════════════════════════════════════
+Chart.defaults.color = '#636e7b';
+Chart.defaults.borderColor = '#1e2530';
+Chart.defaults.font.family = "'Barlow Condensed', 'Noto Sans KR', sans-serif";
+
+const BASE_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#161c24', titleColor: '#e8c93a', bodyColor: '#cdd9e5', borderColor: '#1e2530', borderWidth: 1 } },
+  scales: {
+    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxRotation: 45 } },
+    y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+  }
+};
+const BAR_Y100 = { ...JSON.parse(JSON.stringify(BASE_OPTS)), scales: { ...JSON.parse(JSON.stringify(BASE_OPTS.scales)), y: { ...JSON.parse(JSON.stringify(BASE_OPTS.scales.y)), max: 100 } } };
+
+let charts = {};
+let allData = [];
+let currentPeriod = 'semanal';
+let trendBuckets  = []; // [{label, records:[]}]
+
+// ══════════════════════════════════════════════════════════
+// INIT CHARTS
+// ══════════════════════════════════════════════════════════
+function initCharts() {
+  const makeBar = (id, color, label) => new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label, data: [], backgroundColor: color+'33', borderColor: color, borderWidth: 1.5, borderRadius: 4 }] },
+    options: JSON.parse(JSON.stringify(BAR_Y100))
+  });
+
+  charts.prod = makeBar('chartProd', '#e8c93a', 'Productividad %');
+  charts.ftq  = makeBar('chartFTQ',  '#3fb950', 'FTQ %');
+  charts.disp = makeBar('chartDisp', '#58a6ff', 'Disponibilidad %');
+
+  charts.oee = new Chart(document.getElementById('chartOEE'), {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: 'OEE %', data: [], borderColor: '#e8c93a', backgroundColor: 'rgba(232,201,58,0.08)', borderWidth: 2, fill: true, tension: 0.35, pointBackgroundColor: '#e8c93a', pointRadius: 5, pointHoverRadius: 8 }] },
+    options: JSON.parse(JSON.stringify(BAR_Y100))
+  });
+
+  charts.scrapMaq = new Chart(document.getElementById('chartScrapMaq'), {
+    type: 'doughnut',
+    data: { labels: [], datasets: [{ data: [], backgroundColor: ['#f85149','#e8c93a','#ff6b35','#58a6ff','#3fb950','#bc8cff','#d29922'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: { backgroundColor: '#161c24', titleColor: '#e8c93a', bodyColor: '#cdd9e5' } } }
+  });
+
+  // ── TREND CHART (semanal/mensual) ──
+  charts.trend = new Chart(document.getElementById('chartTrend'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'OEE %',           data: [], borderColor: '#e8c93a', backgroundColor: 'rgba(232,201,58,0.1)', borderWidth: 2.5, fill: true, tension: 0.3, pointBackgroundColor: [], pointRadius: 7, pointHoverRadius: 11, pointBorderWidth: 2, pointBorderColor: '#13181f' },
+        { label: 'Productividad %', data: [], borderColor: '#ff6b35', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], tension: 0.3, pointRadius: 3, pointHoverRadius: 6 },
+        { label: 'FTQ %',           data: [], borderColor: '#3fb950', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], tension: 0.3, pointRadius: 3, pointHoverRadius: 6 },
+        { label: 'Disponib. %',     data: [], borderColor: '#58a6ff', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], tension: 0.3, pointRadius: 3, pointHoverRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 11 }, color: '#636e7b', usePointStyle: true } },
+        tooltip: {
+          backgroundColor: '#161c24', titleColor: '#e8c93a', bodyColor: '#cdd9e5',
+          borderColor: '#1e2530', borderWidth: 1,
+          callbacks: {
+            afterBody: (items) => {
+              const idx = items[0]?.dataIndex;
+              if (idx == null || !trendBuckets[idx]) return '';
+              const oee = +trendBuckets[idx].oee.toFixed(1);
+              return oee < 65 ? [``, `⚠ OEE bajo meta (65%)`, `→ Haz clic para ver causas`] : [``, `✅ OEE dentro de meta`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, max: 100,
+          ticks: { callback: v => v + '%' } }
+      },
+      onClick: (e, els) => {
+        if (!els.length) return;
+        const idx = els[0].index;
+        mostrarInsight(idx);
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// DATA LOAD
+// ══════════════════════════════════════════════════════════
+window.loadLocalData = function() {
+  try {
+    const local = JSON.parse(localStorage.getItem('hpm_scrap') || '[]');
+    allData = local;
+    refreshDashboard(local);
+  } catch(e) { allData = []; }
+};
+
+window.refreshDashboard = function(data) {
+  allData = data || [];
+  updateKPIs();
+  updateCharts();
+  updateTable();
+  buildTrendBuckets();
+  updateTrendChart();
+  document.getElementById('lastUpdate').textContent = '🔄 ' + new Date().toLocaleTimeString('es-MX');
+};
+
+// ══════════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════════
+function avg(arr, key) {
+  if (!arr.length) return 0;
+  return arr.reduce((s,r) => s + (parseFloat(r[key])||0), 0) / arr.length;
+}
+
+function updateKPIs() {
+  const d = allData;
+  if (!d.length) { ['kpiOEE','kpiProd','kpiFTQ','kpiDisp'].forEach(id => document.getElementById(id).textContent='—'); return; }
+  setKPI('kpiOEE',  avg(d,'oee'),           65, 50);
+  setKPI('kpiProd', avg(d,'productividad'), 85, 70);
+  setKPI('kpiFTQ',  avg(d,'ftq'),           95, 85);
+  setKPI('kpiDisp', avg(d,'disponibilidad'),90, 80);
+  document.getElementById('countBadge').textContent = `${d.length} registro${d.length!==1?'s':''} · ${d.length}개 기록`;
+}
+
+function setKPI(id, val, good, warn) {
+  const el = document.getElementById(id);
+  el.textContent = val.toFixed(1)+'%';
+  el.style.color = val>=good?'var(--success)':val>=warn?'var(--warn)':'var(--error)';
+}
+
+// ══════════════════════════════════════════════════════════
+// DAILY CHARTS (existing)
+// ══════════════════════════════════════════════════════════
+function updateCharts() {
+  const d = allData;
+  const labels = d.map((r,i) => `${i+1}. ${r.maquina||'?'}`);
+  updateBarChart(charts.prod, labels, d.map(r=>+r.productividad||0), 85);
+  updateBarChart(charts.ftq,  labels, d.map(r=>+r.ftq||0), 95);
+  updateBarChart(charts.disp, labels, d.map(r=>+r.disponibilidad||0), 90);
+
+  charts.oee.data.labels = labels;
+  charts.oee.data.datasets[0].data = d.map(r=>+r.oee||0);
+  charts.oee.update();
+
+  const byMaq = {};
+  d.forEach(r => { byMaq[r.maquina||'N/D'] = (byMaq[r.maquina||'N/D']||0) + (+r.pzasScrap||0); });
+  charts.scrapMaq.data.labels = Object.keys(byMaq);
+  charts.scrapMaq.data.datasets[0].data = Object.values(byMaq);
+  charts.scrapMaq.update();
+}
+
+function updateBarChart(chart, labels, data, g) {
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = data;
+  chart.data.datasets[0].backgroundColor = data.map(v => v>=g?'rgba(63,185,80,0.25)':v>=g*.85?'rgba(232,201,58,0.25)':'rgba(248,81,73,0.25)');
+  chart.data.datasets[0].borderColor      = data.map(v => v>=g?'#3fb950':v>=g*.85?'#e8c93a':'#f85149');
+  chart.update();
+}
+
+// ══════════════════════════════════════════════════════════
+// TREND — SEMANAL / MENSUAL
+// ══════════════════════════════════════════════════════════
+function isoWeek(d) {
+  const dt = new Date(d); dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);
+  const w = new Date(dt.getFullYear(),0,4);
+  return `${dt.getFullYear()}-S${String(1+Math.round(((dt-w)/86400000-3+(w.getDay()+6)%7)/7)).padStart(2,'0')}`;
+}
+
+function buildTrendBuckets() {
+  if (!allData.length) { trendBuckets = []; return; }
+  const map = {};
+  allData.forEach(r => {
+    const ts = r.timestamp || r.fecha || '';
+    if (!ts) return;
+    const date = new Date(ts);
+    const key  = currentPeriod === 'semanal'
+      ? isoWeek(date)
+      : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+    if (!map[key]) map[key] = { label: key, records: [] };
+    map[key].records.push(r);
+  });
+
+  trendBuckets = Object.values(map).sort((a,b) => a.label.localeCompare(b.label)).map(b => {
+    const recs = b.records;
+    const oee   = avg(recs,'oee');
+    const prod  = avg(recs,'productividad');
+    const ftq   = avg(recs,'ftq');
+    const disp  = avg(recs,'disponibilidad');
+    const scrap = recs.reduce((s,r)=>s+(+r.pzasScrap||0),0);
+    const tm    = recs.reduce((s,r)=>s+(+r.tiempoMuerto||0),0);
+    // Friendly label
+    let lbl = b.label;
+    if (currentPeriod === 'mensual') {
+      const [y,m] = b.label.split('-');
+      const mNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      lbl = `${mNames[+m-1]} ${y}`;
+    }
+    return { ...b, lbl, oee, prod, ftq, disp, scrap, tm };
+  });
+}
+
+function updateTrendChart() {
+  if (!charts.trend) return;
+  const labels = trendBuckets.map(b=>b.lbl);
+  const oeeVals  = trendBuckets.map(b=>+b.oee.toFixed(1));
+  const prodVals = trendBuckets.map(b=>+b.prod.toFixed(1));
+  const ftqVals  = trendBuckets.map(b=>+b.ftq.toFixed(1));
+  const dispVals = trendBuckets.map(b=>+b.disp.toFixed(1));
+
+  // Color each OEE point by performance
+  const ptColors = oeeVals.map(v => v>=65?'#3fb950':v>=50?'#d29922':'#f85149');
+
+  charts.trend.data.labels = labels;
+  charts.trend.data.datasets[0].data = oeeVals;
+  charts.trend.data.datasets[0].pointBackgroundColor = ptColors;
+  charts.trend.data.datasets[1].data = prodVals;
+  charts.trend.data.datasets[2].data = ftqVals;
+  charts.trend.data.datasets[3].data = dispVals;
+  charts.trend.update();
+
+  // Period mini KPIs
+  updatePeriodKPIs();
+}
+
+function switchPeriod(p) {
+  currentPeriod = p;
+  document.getElementById('tabSemanal').classList.toggle('active', p==='semanal');
+  document.getElementById('tabMensual').classList.toggle('active', p==='mensual');
+  document.getElementById('trendChartTitle').textContent = p==='semanal'?'OEE Semanal · 주간 OEE':'OEE Mensual · 월간 OEE';
+  buildTrendBuckets();
+  updateTrendChart();
+  // Reset insight
+  document.getElementById('insightPlaceholder').style.display='flex';
+  document.getElementById('insightContent').style.display='none';
+}
+
+function updatePeriodKPIs() {
+  const el = document.getElementById('periodKPIs');
+  if (!trendBuckets.length) { el.innerHTML=''; return; }
+  const last = trendBuckets[trendBuckets.length-1];
+  const prev = trendBuckets.length>1 ? trendBuckets[trendBuckets.length-2] : null;
+  const trend = (cur,prv,key) => {
+    if (!prv) return '';
+    const d = cur[key]-prv[key];
+    return d>0?`<span style="color:var(--success);font-size:11px;">▲ ${d.toFixed(1)}%</span>`
+              :`<span style="color:var(--error);font-size:11px;">▼ ${Math.abs(d).toFixed(1)}%</span>`;
+  };
+  const periodLabel = currentPeriod==='semanal'?'Semana actual · 이번 주':'Mes actual · 이번 달';
+  el.innerHTML = [
+    {key:'oee',   lbl:'OEE',           ko:'종합효율',  c:'var(--accent)',  g:65, w:50},
+    {key:'prod',  lbl:'Productividad', ko:'생산성',    c:'var(--accent2)', g:85, w:70},
+    {key:'ftq',   lbl:'FTQ',           ko:'품질률',    c:'var(--success)', g:95, w:85},
+    {key:'disp',  lbl:'Disponibilidad',ko:'가동률',    c:'var(--blue)',    g:90, w:80},
+  ].map(m => {
+    const v = last[m.key];
+    const vc = v>=m.g?'var(--success)':v>=m.w?'var(--warn)':'var(--error)';
+    return `<div class="pkpi" style="--pkpi-c:${vc}">
+      <div class="pkpi-val" style="color:${vc}">${v.toFixed(1)}%</div>
+      <div class="pkpi-lbl">${m.lbl} ${trend(last,prev,m.key)}</div>
+      <div class="pkpi-ko">${periodLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// INSIGHT — ANÁLISIS DE CAUSAS DEL PUNTO SELECCIONADO
+// ══════════════════════════════════════════════════════════
+function mostrarInsight(idx) {
+  const b = trendBuckets[idx];
+  if (!b) return;
+
+  document.getElementById('insightPlaceholder').style.display = 'none';
+  document.getElementById('insightContent').style.display = 'block';
+
+  // Header
+  document.getElementById('insightPeriod').textContent =
+    (currentPeriod==='semanal'?'📅 Semana · 주간: ':'📆 Mes · 월: ') + b.lbl;
+  const oeeEl = document.getElementById('insightOEEVal');
+  oeeEl.textContent = b.oee.toFixed(1) + '% OEE';
+  oeeEl.style.color = b.oee>=65?'var(--success)':b.oee>=50?'var(--warn)':'var(--error)';
+
+  const statusEl = document.getElementById('insightStatus');
+  if (b.oee >= 65) {
+    statusEl.innerHTML = '<span style="color:var(--success)">✅ OEE dentro de meta · 목표 달성</span>';
+  } else if (b.oee >= 50) {
+    statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ OEE por debajo de meta · 목표 미달</span>';
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--error)">❌ OEE crítico · 위험 수준</span>';
+  }
+
+  // Rubros
+  const mkRubro = (val,lbl,ko,g,w,c) => {
+    const vc = val>=g?'var(--success)':val>=w?'var(--warn)':'var(--error)';
+    return `<div class="ir-box">
+      <div class="ir-val" style="color:${vc}">${val.toFixed(1)}%</div>
+      <div class="ir-lbl" style="color:${c}">${lbl}</div>
+      <div class="ir-ko">${ko}</div>
+    </div>`;
+  };
+  document.getElementById('insightRubros').innerHTML =
+    mkRubro(b.prod,'Produc.','생산성','var(--accent2)',85,70) +
+    mkRubro(b.ftq, 'FTQ',   '품질률', 'var(--success)',95,85) +
+    mkRubro(b.disp,'Dispon.','가동률','var(--blue)',   90,80);
+
+  // Causas analizadas automáticamente
+  const causes = [];
+
+  // — Productividad baja
+  if (b.prod < 85) {
+    const faltante = b.records.reduce((s,r)=>s+Math.max(0,(+r.planProd||0)-(+r.pzasProducidas||0)),0);
+    causes.push({ type:'prod', badge:'PROD', icon:'⚙️',
+      es: `Productividad baja (${b.prod.toFixed(1)}%). Faltaron ~${faltante} piezas para cumplir el plan.`,
+      ko: `생산성 저하 (${b.prod.toFixed(1)}%). 계획 대비 약 ${faltante}개 부족.` });
+  }
+
+  // — FTQ / Scrap alto
+  if (b.ftq < 95) {
+    // Top defectos del periodo
+    const defMap = {};
+    b.records.forEach(r => (r.defectos||[]).forEach(d => {
+      defMap[d.tipo] = (defMap[d.tipo]||0) + (+d.cantidad||0);
+    }));
+    const topDef = Object.entries(defMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const defStr = topDef.length ? topDef.map(([t,c])=>`${t} (${c} pzas)`).join(', ') : 'Ver registros';
+    causes.push({ type:'ftq', badge:'FTQ', icon:'🔴',
+      es: `Alta tasa de scrap (${(100-b.ftq).toFixed(1)}%). Top defectos: ${defStr}.`,
+      ko: `높은 스크랩 비율 (${(100-b.ftq).toFixed(1)}%). 주요 불량: ${defStr}.` });
+  }
+
+  // — Disponibilidad baja
+  if (b.disp < 90) {
+    // Top motivos de paro
+    const paroMap = {};
+    b.records.forEach(r => (r.parosMaquina||[]).forEach(p => {
+      const key = `${p.tipo||'Paro'}${p.motivo?': '+p.motivo:''}`;
+      paroMap[key] = (paroMap[key]||0) + (+p.minutos||0);
+    }));
+    const topParo = Object.entries(paroMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const tmTotal = b.tm;
+    const paroStr = topParo.length ? topParo.map(([t,m])=>`${t} (${m} min)`).join(' | ') : `${tmTotal} min de tiempo muerto`;
+    causes.push({ type:'disp', badge:'DISP', icon:'⏱️',
+      es: `Disponibilidad baja (${b.disp.toFixed(1)}%). Tiempo muerto: ${tmTotal} min. Causas: ${paroStr}.`,
+      ko: `가동률 저하 (${b.disp.toFixed(1)}%). 비가동 시간: ${tmTotal}분. 원인: ${paroStr}.` });
+  }
+
+  // — Sin causas (OEE OK)
+  if (!causes.length) {
+    causes.push({ type:'ok', badge:'OK', icon:'✅',
+      es: `OEE dentro de meta en este periodo. Los tres rubros están en verde.`,
+      ko: `이 기간의 OEE가 목표 내에 있습니다. 세 항목 모두 정상입니다.` });
+  }
+
+  // Registros del periodo
+  const maqSet = [...new Set(b.records.map(r=>r.maquina).filter(Boolean))];
+  const regInfo = `${b.records.length} registros · Máquinas: ${maqSet.join(', ')||'—'}`;
+  causes.push({ type:'ok', badge:'INFO', icon:'📋',
+    es: regInfo, ko: `${b.records.length}개 기록` });
+
+  const classMap = { prod:'prod-cause', ftq:'ftq-cause', disp:'disp-cause', ok:'ok-cause' };
+  const badgeMap = { prod:'prod', ftq:'ftq', disp:'disp', ok:'ok' };
+  document.getElementById('insightCauses').innerHTML =
+    `<div class="ic-title">📊 ANÁLISIS DE CAUSAS · 원인 분석</div>` +
+    causes.map(c=>`
+      <div class="ic-item ${classMap[c.type]}">
+        <span style="font-size:16px;flex-shrink:0;">${c.icon}</span>
+        <span class="ic-badge ${badgeMap[c.type]}">${c.badge}</span>
+        <div class="ic-text">
+          <strong>${c.es}</strong>
+          <small>${c.ko}</small>
+        </div>
+      </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// TABLE
+// ══════════════════════════════════════════════════════════
+function updateTable() {
+  const body = document.getElementById('tablaBody');
+  const empty = document.getElementById('emptyState');
+  if (!allData.length) { body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  body.innerHTML = allData.map((r,i) => {
+    const scrapPct = r.pzasProducidas>0?((r.pzasScrap/r.pzasProducidas)*100).toFixed(1):'0.0';
+    const sc = +scrapPct<2?'val-good':+scrapPct<5?'val-warn':'val-bad';
+    const oc = +r.oee>=65?'val-good':+r.oee>=50?'val-warn':'val-bad';
+    const tp = r.turno==='DIA'?'pill-dia':'pill-noche';
+    const gp = r.grupo==='A'?'pill-a':'pill-b';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td style="font-size:11px;">${r.hora||r.timestamp?.slice(11,16)||'—'}</td>
+      <td>${r.numEmpleado||'—'}</td>
+      <td><span class="pill ${tp}">${r.turno||'—'}</span> <span class="pill ${gp}">${r.grupo||'—'}</span></td>
+      <td><strong>${r.maquina||'—'}</strong></td>
+      <td>${r.cliente||'—'}</td>
+      <td>${r.modelo||'—'}</td>
+      <td style="font-size:11px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${r.pieza}">${r.pieza||'—'}</td>
+      <td style="font-family:'Barlow Condensed';font-size:12px;color:var(--muted);">${r.numeroParte||'—'}</td>
+      <td>${r.planProd||0}</td>
+      <td>${r.pzasProducidas||0}</td>
+      <td class="${sc}">${r.pzasScrap||0} (${scrapPct}%)</td>
+      <td>${r.tiempoMuerto||0} min</td>
+      <td class="${+r.productividad>=85?'val-good':+r.productividad>=70?'val-warn':'val-bad'}">${(+r.productividad||0).toFixed(1)}%</td>
+      <td class="${+r.ftq>=95?'val-good':+r.ftq>=85?'val-warn':'val-bad'}">${(+r.ftq||0).toFixed(1)}%</td>
+      <td class="${+r.disponibilidad>=90?'val-good':+r.disponibilidad>=80?'val-warn':'val-bad'}">${(+r.disponibilidad||0).toFixed(1)}%</td>
+      <td class="${oc}"><strong>${(+r.oee||0).toFixed(1)}%</strong></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// CIERRE TURNO
+// ══════════════════════════════════════════════════════════
+function abrirCierre() {
+  const d = allData;
+  const oee=avg(d,'oee'), prod=avg(d,'productividad'), ftq=avg(d,'ftq'), disp=avg(d,'disponibilidad');
+  document.getElementById('modalOEE').textContent  = d.length?oee.toFixed(1)+'%':'—';
+  document.getElementById('modalProd').textContent = d.length?prod.toFixed(1)+'%':'—';
+  document.getElementById('modalFTQ').textContent  = d.length?ftq.toFixed(1)+'%':'—';
+  document.getElementById('modalDisp').textContent = d.length?disp.toFixed(1)+'%':'—';
+  document.getElementById('modalOEEStatus').textContent = oee>=65?'✅ EFICIENCIA ACEPTABLE · 적합':oee>=50?'⚠️ MEJORAR · 개선 필요':'❌ CRÍTICO · 위험';
+  document.getElementById('mTotalReg').textContent  = d.length;
+  document.getElementById('mPlanTotal').textContent = d.reduce((s,r)=>s+(+r.planProd||0),0).toLocaleString();
+  document.getElementById('mRealTotal').textContent = d.reduce((s,r)=>s+(+r.pzasProducidas||0),0).toLocaleString();
+  document.getElementById('mScrapTotal').textContent= d.reduce((s,r)=>s+(+r.pzasScrap||0),0).toLocaleString();
+  document.getElementById('mTMTotal').textContent   = d.reduce((s,r)=>s+(+r.tiempoMuerto||0),0);
+  document.getElementById('mFecha').textContent     = new Date().toLocaleDateString('es-MX');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function cerrarModal(e) {
+  if (!e || e.target===document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════════════
+// EXCEL EXPORT
+// ══════════════════════════════════════════════════════════
+function exportarExcel() {
+  if (!allData.length) { alert('No hay datos para exportar · 내보낼 데이터가 없습니다'); return; }
+  const oee=avg(allData,'oee').toFixed(2), prod=avg(allData,'productividad').toFixed(2),
+        ftq=avg(allData,'ftq').toFixed(2), disp=avg(allData,'disponibilidad').toFixed(2);
+  const wb = XLSX.utils.book_new();
+  const resumen = [
+    ['HPM — REPORTE OEE / OEE 보고서','','',''],
+    ['Fecha:',new Date().toLocaleDateString('es-MX'),'',''],
+    ['Hora:',new Date().toLocaleTimeString('es-MX'),'',''],['','','',''],
+    ['INDICADOR','VALOR','META','STATUS'],
+    ['OEE General',oee+'%','65%',+oee>=65?'✅ OK':'❌ NOK'],
+    ['Productividad',prod+'%','85%',+prod>=85?'✅ OK':'❌ NOK'],
+    ['FTQ',ftq+'%','95%',+ftq>=95?'✅ OK':'❌ NOK'],
+    ['Disponibilidad',disp+'%','90%',+disp>=90?'✅ OK':'❌ NOK'],['','','',''],
+    ['Total Registros:',allData.length,'',''],
+    ['Plan Total:',allData.reduce((s,r)=>s+(+r.planProd||0),0),'pzas',''],
+    ['Real Total:',allData.reduce((s,r)=>s+(+r.pzasProducidas||0),0),'pzas',''],
+    ['Scrap Total:',allData.reduce((s,r)=>s+(+r.pzasScrap||0),0),'pzas',''],
+    ['T.Muerto Total:',allData.reduce((s,r)=>s+(+r.tiempoMuerto||0),0),'min',''],
+  ];
+  const wsR = XLSX.utils.aoa_to_sheet(resumen);
+  wsR['!cols']=[{wch:28},{wch:14},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsR,'OEE_Resumen');
+  const headers=['Timestamp','Fecha','Hora','N° Empleado','Turno','Grupo','Máquina','Cliente','Modelo','Pieza','N° Parte','Plan','Producidas','Scrap','T.Muerto','Productividad%','FTQ%','Disponibilidad%','OEE%'];
+  const rows=allData.map(r=>[r.timestamp||'',r.fecha||'',r.hora||'',r.numEmpleado||'',r.turno||'',r.grupo||'',r.maquina||'',r.cliente||'',r.modelo||'',r.pieza||'',r.numeroParte||'',+r.planProd||0,+r.pzasProducidas||0,+r.pzasScrap||0,+r.tiempoMuerto||0,+r.productividad||0,+r.ftq||0,+r.disponibilidad||0,+r.oee||0]);
+  const wsD=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  wsD['!cols']=headers.map(h=>({wch:Math.max(h.length+2,14)}));
+  XLSX.utils.book_append_sheet(wb,wsD,'Registros_Detalle');
+  XLSX.writeFile(wb,`HPM_OEE_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ══════════════════════════════════════════════════════════
+// QR MODAL
+// ══════════════════════════════════════════════════════════
+let qrGenerated = false;
+function abrirQR() {
+  // URL fija de GitHub Pages — siempre funciona desde cualquier dispositivo
+  const GITHUB_URL = 'https://calidadbackupsistema-collab.github.io/hpm-process-oee/formulario.html';
+
+  // Si estamos en GitHub Pages usar esa URL, si no usar la URL relativa del servidor
+  const isLocal = window.location.protocol === 'file:';
+  const url = isLocal ? GITHUB_URL : (window.location.href.replace(/dashboard\.html.*$/, '').replace(/\/$/, '') + '/formulario.html');
+
+  document.getElementById('qrUrlText').textContent = url;
+  if (!qrGenerated) {
+    document.getElementById('qrCanvas').innerHTML='';
+    new QRCode(document.getElementById('qrCanvas'),{text:url,width:200,height:200,colorDark:'#0a0a0a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    qrGenerated=true;
+  }
+  document.getElementById('qrOverlay').classList.add('open');
+}
+function cerrarQR(e) {
+  if (!e||e.target===document.getElementById('qrOverlay')) document.getElementById('qrOverlay').classList.remove('open');
+}
+function copiarURL() {
+  const url=document.getElementById('qrUrlText').textContent;
+  const btn=document.querySelector('.qr-copy-btn');
+  const ok=()=>{btn.textContent='✅ Copiado';setTimeout(()=>btn.textContent='📋 Copiar',2000);};
+  navigator.clipboard?.writeText(url).then(ok).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  loadLocalData();
+  setInterval(() => {
+    const now = new Date().toLocaleString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('pageFooter').textContent = `HPM Process Quality System · ${now}`;
+  }, 1000);
+});
+</script>
+
+</body>
+</html>
